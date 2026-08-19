@@ -88,6 +88,10 @@ body {
   min-height: 100%;
 }
 
+html.landing-scroll {
+  scroll-behavior: auto;
+}
+
 ::selection {
   background: #b4d7ff;
 }

@@ -1,4 +1,8 @@
+"use client";
+
 import Link from "next/link";
+import { motion } from "motion/react";
+import { scrollToId, useLandingSmoothScroll } from "./smooth-scroll";
 
 const ROWS = [
   ["Pilon Fry House", "Sofia Mendez", "casa@pilonfryhouse.demo", "Qualified"],
@@ -29,7 +33,11 @@ const CHANNELS = [
 
 const NAV = ["Haki AI", "Universal", "Overview", "Hermes", "Leads", "Campaigns", "Sequences", "Analytics"];
 
+const ease = [0.22, 1, 0.36, 1] as const;
+
 export function LandingPage() {
+  useLandingSmoothScroll();
+
   return (
     <div className="bg-[#f4f4f2] text-ink">
       <div className="p-3">
@@ -47,12 +55,12 @@ export function LandingPage() {
                 </span>
                 Haki
               </Link>
-              <a href="#how" className="text-[13px] text-muted hover:text-ink">
+              <button type="button" onClick={() => scrollToId("how")} className="text-[13px] text-muted hover:text-ink">
                 How it works
-              </a>
-              <a href="#about" className="text-[13px] text-muted hover:text-ink">
+              </button>
+              <button type="button" onClick={() => scrollToId("about")} className="text-[13px] text-muted hover:text-ink">
                 About
-              </a>
+              </button>
               <Link
                 href="/haki"
                 className="rounded-full bg-[#1d1d1f] px-3.5 py-1.5 text-[13px] font-medium text-white hover:bg-black"
@@ -63,50 +71,78 @@ export function LandingPage() {
           </header>
 
           <section className="relative z-10 mx-auto max-w-3xl px-6 pb-10 pt-24 text-center sm:pt-32">
-            <p className="text-[13px] text-[#1d1d1f]/70">Outreach OS for lists you already have</p>
-            <h1 className="mt-4 text-[40px] font-semibold leading-[1.12] tracking-[-0.035em] text-[#1d1d1f] sm:text-[56px]">
+            <motion.p
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.7, ease }}
+              className="text-[13px] text-[#1d1d1f]/70"
+            >
+              Outreach OS for lists you already have
+            </motion.p>
+            <motion.h1
+              initial={{ opacity: 0, y: 22 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, ease, delay: 0.08 }}
+              className="mt-4 text-[40px] font-semibold leading-[1.12] tracking-[-0.035em] text-[#1d1d1f] sm:text-[56px]"
+            >
               Helping you turn a file into{" "}
               <em className="font-serif font-normal italic">multi-channel outreach</em>
-            </h1>
-            <p className="mx-auto mt-5 max-w-lg text-[16px] leading-7 text-[#1d1d1f]/65">
-              Say bye to blasting a CSV. Describe the goal. Haki drafts the workflow and waits for your review.
-            </p>
-            <Link
-              href="/haki"
-              className="mt-7 inline-flex rounded-full bg-[#1d1d1f] px-5 py-2.5 text-[14px] font-medium text-white hover:bg-black"
+            </motion.h1>
+            <motion.p
+              initial={{ opacity: 0, y: 18 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.7, ease, delay: 0.16 }}
+              className="mx-auto mt-5 max-w-lg text-[16px] leading-7 text-[#1d1d1f]/65"
             >
-              Open Haki AI
-            </Link>
+              Say bye to blasting a CSV. Describe the goal. Haki drafts the workflow and waits for your review.
+            </motion.p>
+            <motion.div
+              initial={{ opacity: 0, y: 14 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, ease, delay: 0.24 }}
+            >
+              <Link
+                href="/haki"
+                className="mt-7 inline-flex rounded-full bg-[#1d1d1f] px-5 py-2.5 text-[14px] font-medium text-white hover:bg-black"
+              >
+                Open Haki AI
+              </Link>
+            </motion.div>
           </section>
 
-          <div className="relative z-10 px-3 pt-10 sm:px-8 sm:pt-16">
+          <motion.div
+            initial={{ opacity: 0, y: 40 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.9, ease, delay: 0.28 }}
+            className="relative z-10 px-3 pt-10 sm:px-8 sm:pt-16"
+          >
             <Link
               href="/haki"
               className="block overflow-hidden rounded-t-[16px] border border-white/70 bg-white shadow-[0_-18px_70px_rgba(0,0,0,0.2)]"
             >
               <HakiAppPreview />
             </Link>
-          </div>
+          </motion.div>
         </div>
       </div>
 
-      <section id="how" className="mx-auto max-w-5xl px-6 py-28">
+      <Reveal id="how" className="mx-auto max-w-5xl px-6 py-28">
         <h2 className="text-center text-[36px] font-semibold tracking-[-0.03em]">How it works</h2>
         <p className="mx-auto mt-3 max-w-lg text-center text-[15px] leading-7 text-muted">
           Data in. Workflow out. Not a lead database. Not an email blaster.
         </p>
         <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {STEPS.map((step) => (
-            <div key={step.n} className="rounded-[18px] border border-line bg-white p-5">
+          {STEPS.map((step, index) => (
+            <Reveal key={step.n} delay={index * 0.06} className="rounded-[18px] border border-line bg-white p-5">
               <div className="text-[12px] text-faint">{step.n}</div>
               <div className="mt-2 text-[16px] font-medium">{step.title}</div>
               <p className="mt-2 text-[13px] leading-6 text-muted">{step.body}</p>
-            </div>
+            </Reveal>
           ))}
         </div>
-      </section>
+      </Reveal>
 
-      <section className="mx-auto max-w-5xl px-6 pb-24">
+      <Reveal className="mx-auto max-w-5xl px-6 pb-24">
         <h2 className="text-center text-[32px] font-semibold tracking-[-0.03em]">The operating system, not the blast</h2>
         <p className="mx-auto mt-3 max-w-xl text-center text-[15px] leading-7 text-muted">
           Email is one channel. Haki is the path from a file you already have to a conversation you can review.
@@ -119,21 +155,21 @@ export function LandingPage() {
             </div>
           ))}
         </div>
-      </section>
+      </Reveal>
 
-      <section className="mx-auto max-w-5xl px-6 pb-28">
+      <Reveal className="mx-auto max-w-5xl px-6 pb-28">
         <h2 className="text-center text-[32px] font-semibold tracking-[-0.03em]">One workflow. Every channel.</h2>
         <div className="mt-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {CHANNELS.map((channel) => (
-            <div key={channel.name} className="rounded-[18px] border border-line bg-white px-4 py-4">
+          {CHANNELS.map((channel, index) => (
+            <Reveal key={channel.name} delay={index * 0.05} className="rounded-[18px] border border-line bg-white px-4 py-4">
               <div className="text-[15px] font-medium">{channel.name}</div>
               <p className="mt-1 text-[13px] leading-5 text-muted">{channel.note}</p>
-            </div>
+            </Reveal>
           ))}
         </div>
-      </section>
+      </Reveal>
 
-      <section id="about" className="mx-auto max-w-2xl px-6 py-24 text-center">
+      <Reveal id="about" className="mx-auto max-w-2xl px-6 py-24 text-center">
         <h2 className="font-serif text-[40px] italic tracking-[-0.03em]">Peace of mind before anything sends</h2>
         <p className="mt-5 text-[16px] leading-8 text-muted">
           Haki starts with a file you already have. It qualifies, sequences, and runs outreach in simulation until you
@@ -145,7 +181,7 @@ export function LandingPage() {
         >
           Open Haki AI
         </Link>
-      </section>
+      </Reveal>
 
       <div className="px-3 pb-3">
         <footer
@@ -165,12 +201,12 @@ export function LandingPage() {
                 <Link href="/haki" className="hover:text-white">
                   Haki AI
                 </Link>
-                <a href="#how" className="hover:text-white">
+                <button type="button" onClick={() => scrollToId("how")} className="hover:text-white">
                   How it works
-                </a>
-                <a href="#about" className="hover:text-white">
+                </button>
+                <button type="button" onClick={() => scrollToId("about")} className="hover:text-white">
                   About
-                </a>
+                </button>
               </div>
               <span className="text-[12px] text-white/70">Simulation workspace · Nothing is sent for real</span>
             </div>
@@ -178,6 +214,32 @@ export function LandingPage() {
         </footer>
       </div>
     </div>
+  );
+}
+
+function Reveal({
+  children,
+  className,
+  delay = 0,
+  id,
+}: {
+  children: React.ReactNode;
+  className?: string;
+  delay?: number;
+  id?: string;
+}) {
+  const Tag = id ? motion.section : motion.div;
+  return (
+    <Tag
+      id={id}
+      className={className}
+      initial={{ opacity: 0, y: 28 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.22 }}
+      transition={{ duration: 0.7, ease, delay }}
+    >
+      {children}
+    </Tag>
   );
 }
 
