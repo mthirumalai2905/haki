@@ -9,13 +9,11 @@ import {
   Layers3,
   LayoutGrid,
   MessageSquare,
-  PanelLeftClose,
   Settings,
   Users,
   Workflow,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useShell } from "./shell-context";
 
 const items: Array<{
   href: string;
@@ -36,11 +34,10 @@ const items: Array<{
 export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
-  const { toggleNav } = useShell();
 
   return (
     <aside className="relative z-30 flex w-[220px] shrink-0 flex-col bg-sidebar">
-      <div className="flex h-12 items-center justify-between px-3.5">
+      <div className="flex h-12 items-center px-3.5">
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-1.5">
             <span className="h-3 w-3 rounded-full bg-[#ff5f57] ring-1 ring-black/10" />
@@ -49,14 +46,6 @@ export function Sidebar() {
           </div>
           <div className="text-[13px] font-semibold tracking-[-0.02em] text-ink">Haki</div>
         </div>
-        <button
-          type="button"
-          onClick={toggleNav}
-          title="Hide navigation"
-          className="flex h-7 w-7 items-center justify-center rounded-[7px] text-faint hover:bg-white hover:text-ink"
-        >
-          <PanelLeftClose className="h-3.5 w-3.5" />
-        </button>
       </div>
 
       <nav className="flex flex-1 flex-col gap-0.5 px-2 pt-1">
