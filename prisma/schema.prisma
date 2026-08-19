@@ -1,0 +1,287 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Workspace {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  imports    Import[]
+  companies  Company[]
+  leads      Lead[]
+  campaigns  Campaign[]
+  workflows  Workflow[]
+  activities Activity[]
+  auditLogs  AuditLog[]
+  icps       Icp[]
+  hermesThreads HermesThread[]
+}
+
+model Import {
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  fileName    String
+  fileType    String
+  fileSize    Int
+  filePath    String
+  rowCount    Int       @default(0)
+  columnCount Int       @default(0)
+  headers     String    @default("[]")
+  mappings    String    @default("{}")
+  preview     String    @default("[]")
+  stats       String    @default("{}")
+  status      String    @default("uploaded")
+  error       String?
+  createdAt   DateTime  @default(now())
+  completedAt DateTime?
+
+  @@index([workspaceId])
+}
+
+model Company {
+  id          String   @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  name        String
+  domain      String?
+  website     String?
+  industry    String?
+  companySize String?
+  country     String?
+  state       String?
+  city        String?
+  linkedin    String?
+  x           String?
+  description String?
+  metadata    String   @default("{}")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  leads       Lead[]
+
+  @@unique([workspaceId, name])
+  @@index([workspaceId])
+}
+
+model Lead {
+  id           String   @id @default(cuid())
+  workspaceId  String
+  workspace    Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  companyId    String?
+  company      Company? @relation(fields: [companyId], references: [id])
+  importId     String?
+  firstName    String?
+  lastName     String?
+  fullName     String?
+  jobTitle     String?
+  email        String?
+  phone        String?
+  linkedin     String?
+  whatsapp     String?
+  reddit       String?
+  x            String?
+  instagram    String?
+  youtube      String?
+  tiktok       String?
+  googleWorkspace String?
+  website      String?
+  country      String?
+  industry     String?
+  companySize  String?
+  source       String?
+  customFields String   @default("{}")
+  status       String   @default("new")
+  emailValid   Boolean  @default(false)
+  phoneValid   Boolean  @default(false)
+  optedOut     Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  qualifications Qualification[]
+  campaignLeads  CampaignLead[]
+  activities     Activity[]
+
+  @@index([workspaceId])
+  @@index([email])
+  @@index([companyId])
+  @@index([status])
+}
+
+model Icp {
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  name        String
+  industry    String?
+  companySize String?
+  location    String?
+  jobTitle    String?
+  description String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  qualifications Qualification[]
+}
+
+model Qualification {
+  id        String   @id @default(cuid())
+  leadId    String
+  lead      Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  icpId     String?
+  icp       Icp?     @relation(fields: [icpId], references: [id])
+  score     Int
+  status    String
+  reason    String
+  createdAt DateTime @default(now())
+
+  @@index([leadId])
+}
+
+model Campaign {
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  name        String
+  description String?
+  goal        String
+  goalCustom  String?
+  audience    String    @default("{}")
+  status      String    @default("draft")
+  channels    String    @default("[]")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  startedAt   DateTime?
+  completedAt DateTime?
+
+  workflowVersions WorkflowVersion[]
+  campaignLeads    CampaignLead[]
+  activities       Activity[]
+  messages         MessageTemplate[]
+
+  @@index([workspaceId])
+  @@index([status])
+}
+
+model Workflow {
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  name        String
+  description String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  versions    WorkflowVersion[]
+}
+
+model WorkflowVersion {
+  id         String    @id @default(cuid())
+  workflowId String?
+  workflow   Workflow? @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  campaignId String?
+  campaign   Campaign? @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  version    Int       @default(1)
+  nodes      String    @default("[]")
+  edges      String    @default("[]")
+  isActive   Boolean   @default(true)
+  createdAt  DateTime  @default(now())
+
+  @@index([campaignId])
+}
+
+model CampaignLead {
+  id              String    @id @default(cuid())
+  campaignId      String
+  campaign        Campaign  @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  leadId          String
+  lead            Lead      @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  status          String    @default("queued")
+  currentNodeId   String?
+  nextExecutionAt DateTime?
+  startedAt       DateTime?
+  completedAt     DateTime?
+
+  executions Execution[]
+
+  @@unique([campaignId, leadId])
+  @@index([status, nextExecutionAt])
+}
+
+model MessageTemplate {
+  id         String   @id @default(cuid())
+  campaignId String
+  campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  nodeId     String
+  channel    String
+  subject    String?
+  body       String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([campaignId, nodeId])
+}
+
+model Activity {
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  leadId      String?
+  lead        Lead?     @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  campaignId  String?
+  campaign    Campaign? @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+  nodeId      String?
+  channel     String?
+  action      String
+  status      String?
+  simulated   Boolean   @default(false)
+  metadata    String    @default("{}")
+  createdAt   DateTime  @default(now())
+
+  @@index([workspaceId, createdAt])
+  @@index([leadId, createdAt])
+  @@index([campaignId, createdAt])
+}
+
+model Execution {
+  id             String       @id @default(cuid())
+  campaignLeadId String
+  campaignLead   CampaignLead @relation(fields: [campaignLeadId], references: [id], onDelete: Cascade)
+  nodeId         String
+  status         String       @default("completed")
+  createdAt      DateTime     @default(now())
+
+  @@unique([campaignLeadId, nodeId])
+}
+
+model AuditLog {
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  action      String
+  objectType  String
+  objectId    String
+  metadata    String    @default("{}")
+  createdAt   DateTime  @default(now())
+
+  @@index([workspaceId, createdAt])
+}
+
+model HermesThread {
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  title       String    @default("Hermes")
+  kind        String    @default("campaign")
+  messages    String    @default("[]")
+  proposal    String    @default("{}")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([workspaceId, updatedAt])
+}

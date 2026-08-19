@@ -1,0 +1,154 @@
+@import "tailwindcss";
+
+:root {
+  --paper: #f2f2f7;
+  --surface: #ffffff;
+  --ink: #1d1d1f;
+  --muted: #6e6e73;
+  --faint: #86868b;
+  --line: rgba(0, 0, 0, 0.08);
+  --line-strong: rgba(0, 0, 0, 0.12);
+  --accent: #007aff;
+  --accent-soft: #e8f1ff;
+  --good: #248a3d;
+  --good-soft: #e4f5e8;
+  --warn: #c93400;
+  --warn-soft: #fff1e8;
+  --bad: #d70015;
+  --bad-soft: #ffe5e8;
+  --info: #007aff;
+  --info-soft: #e8f1ff;
+  --sim: #5856d6;
+  --desktop: #d8d8de;
+  --sidebar: #f6f6f8;
+  --titlebar: rgba(255, 255, 255, 0.72);
+}
+
+@theme inline {
+  --color-paper: var(--paper);
+  --color-surface: var(--surface);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-good: var(--good);
+  --color-good-soft: var(--good-soft);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-bad: var(--bad);
+  --color-bad-soft: var(--bad-soft);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+  --color-sim: var(--sim);
+  --color-desktop: var(--desktop);
+  --color-sidebar: var(--sidebar);
+  --font-sans: var(--font-inter), -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, "SF Mono", Menlo, monospace;
+  --font-serif: var(--font-instrument), "Iowan Old Style", "Palatino Linotype", serif;
+}
+
+.font-serif {
+  font-family: var(--font-serif);
+}
+
+.landing {
+  background:
+    radial-gradient(900px 480px at 50% -8%, rgba(110, 168, 255, 0.28), transparent 55%),
+    linear-gradient(180deg, #071221 0%, #0b2344 42%, #12406f 100%);
+}
+
+.landing-mesh {
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.045) 1px, transparent 1px);
+  background-size: 42px 42px;
+  mask-image: radial-gradient(ellipse at 50% 30%, black 20%, transparent 78%);
+}
+
+.landing-shade {
+  background: linear-gradient(180deg, rgba(7, 18, 33, 0.55) 0%, rgba(7, 18, 33, 0.72) 40%, #071221 100%);
+}
+
+* {
+  border-color: var(--line);
+}
+
+html,
+body {
+  background: var(--desktop);
+  color: var(--ink);
+  font-family: var(--font-inter), -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+  letter-spacing: -0.011em;
+}
+
+body {
+  min-height: 100%;
+}
+
+::selection {
+  background: #b4d7ff;
+}
+
+.dot-grid {
+  background-image: radial-gradient(rgba(0, 0, 0, 0.08) 0.7px, transparent 0.7px);
+  background-size: 16px 16px;
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+  height: 9px;
+  width: 9px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.18);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+.react-flow__attribution {
+  display: none;
+}
+
+.react-flow__edge-path {
+  stroke: #c7c7cc !important;
+}
+
+.react-flow__handle {
+  width: 8px !important;
+  height: 8px !important;
+  background: #007aff !important;
+  border: 2px solid #ffffff !important;
+}
+
+.field {
+  width: 100%;
+  border: 1px solid var(--line-strong);
+  background: #f5f5f7;
+  border-radius: 10px;
+  padding: 8px 10px;
+  outline: none;
+  font-size: 13px;
+}
+
+.field:focus {
+  background: #ffffff;
+  border-color: #007aff;
+  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.18);
+}
+
+.mac-window {
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.08),
+    0 22px 50px rgba(0, 0, 0, 0.16),
+    0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.glass {
+  background: var(--titlebar);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+}
