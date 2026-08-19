@@ -57,7 +57,10 @@ Persistent sidebar.
 
 Navigation:
 
+Haki AI
+Universal (Beta)
 Overview
+Hermes
 Leads
 Campaigns
 Sequences
@@ -76,6 +79,18 @@ Top navigation:
 - User
 
 Support a command palette.
+
+---
+
+# Haki Universal
+
+Beta surface.
+
+The operator describes a list. DeepSeek routes the brief to Wikidata or OpenStreetMap. The left panel shows the plan. The right panel is the live collection pass: a record counter, a progress bar, and each public hit as it lands.
+
+Download the file or send it into Import.
+
+Do not scrape Zillow, Redfin, LinkedIn, or Google. Do not invent emails. Mark it Beta.
 
 ---
 

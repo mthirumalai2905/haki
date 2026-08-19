@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AppShell } from "@/components/layout/AppShell";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
@@ -39,6 +39,24 @@ export default function ImportPage() {
   const [error, setError] = useState("");
   const [item, setItem] = useState<ImportRecord | null>(null);
   const [result, setResult] = useState<{ imported: number; validEmails: number; validPhones: number } | null>(null);
+
+  useEffect(() => {
+    const id = new URLSearchParams(window.location.search).get("id");
+    if (!id) return;
+    void (async () => {
+      setBusy(true);
+      setError("");
+      try {
+        const created = await api<ImportRecord>(`/api/imports/${id}`);
+        setItem(created);
+        setStep(1);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Could not open that file.");
+      } finally {
+        setBusy(false);
+      }
+    })();
+  }, []);
 
   const mappedPreview = useMemo(() => {
     if (!item) return [];

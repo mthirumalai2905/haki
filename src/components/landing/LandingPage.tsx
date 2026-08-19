@@ -27,7 +27,7 @@ const CHANNELS = [
   { name: "Phone", note: "Booked when the path asks" },
 ];
 
-const NAV = ["Haki AI", "Overview", "Hermes", "Leads", "Campaigns", "Sequences", "Analytics"];
+const NAV = ["Haki AI", "Universal", "Overview", "Hermes", "Leads", "Campaigns", "Sequences", "Analytics"];
 
 export function LandingPage() {
   return (

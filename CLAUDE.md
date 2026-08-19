@@ -82,6 +82,22 @@ The internal lead model must remain independent of the original source format.
 
 ---
 
+## Haki Universal (Beta)
+
+Haki Universal accepts a sourcing brief. DeepSeek routes it to allowed open-data APIs, then streams hits into a live collection panel.
+
+Allowed sources: Wikidata SPARQL, OpenStreetMap Overpass.
+
+It does not scrape Zillow, Redfin, LinkedIn, Google, Maps, Crunchbase, Apollo, or ZoomInfo.
+
+Do not invent emails or phones. Missing fields stay empty.
+
+The operator can download the file or send it into the existing import flow.
+
+Mark it Beta in the sidebar. Never claim a listing site was scraped.
+
+---
+
 ## Ingestion
 
 The first screen of the product should revolve around ingestion.

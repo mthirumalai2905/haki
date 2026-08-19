@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   BarChart3,
   Bot,
+  Globe,
   Layers3,
   LayoutGrid,
   MessageSquare,
@@ -16,8 +17,14 @@ import {
 import { cn } from "@/lib/utils";
 import { useShell } from "./shell-context";
 
-const items = [
+const items: Array<{
+  href: string;
+  label: string;
+  icon: typeof Globe;
+  beta?: boolean;
+}> = [
   { href: "/haki", label: "Haki AI", icon: MessageSquare },
+  { href: "/universal", label: "Universal", icon: Globe, beta: true },
   { href: "/overview", label: "Overview", icon: LayoutGrid },
   { href: "/hermes", label: "Hermes", icon: Bot },
   { href: "/leads", label: "Leads", icon: Users },
@@ -67,11 +74,19 @@ export function Sidebar() {
               }}
               className={cn(
                 "relative z-10 flex items-center gap-2.5 rounded-[8px] px-2.5 py-1.5 text-[13px]",
+                item.beta && "mt-0.5 pt-2.5",
                 active ? "bg-white text-ink shadow-[0_1px_2px_rgba(0,0,0,0.06)]" : "text-muted hover:bg-white/60 hover:text-ink",
               )}
             >
               <Icon className={cn("h-3.5 w-3.5", active ? "text-accent" : "")} />
-              {item.label}
+              <span className="relative">
+                {item.beta ? (
+                  <span className="absolute -top-2 left-0 text-[8px] font-semibold uppercase tracking-[0.14em] text-warn">
+                    Beta
+                  </span>
+                ) : null}
+                {item.label}
+              </span>
             </Link>
           );
         })}

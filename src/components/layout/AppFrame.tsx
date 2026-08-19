@@ -1,6 +1,6 @@
 "use client";
 
-import { Component, useState, type ReactNode } from "react";
+import { Component, useEffect, useState, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import { Sidebar } from "./Sidebar";
 import { CommandPalette } from "./CommandPalette";
@@ -12,6 +12,10 @@ export function AppFrame({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
   const [navOpen, setNavOpen] = useState(true);
   const pathname = usePathname();
+
+  useEffect(() => {
+    setNavOpen(!pathname.startsWith("/universal"));
+  }, [pathname]);
 
   if (pathname === "/") {
     return <>{children}</>;

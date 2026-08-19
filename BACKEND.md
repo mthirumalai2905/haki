@@ -77,6 +77,14 @@ failed
 
 ---
 
+# Haki Universal
+
+Beta briefing endpoint. `POST /api/universal` streams a plan, then public records from Wikidata or OpenStreetMap.
+
+It does not scrape Zillow, Redfin, LinkedIn, or Google. Missing emails stay empty. Files can be downloaded or posted into the existing import flow.
+
+---
+
 # Parsing
 
 The backend should parse CSV/XLSX files.
@@ -697,8 +705,8 @@ Before executing an action verify:
 
 Do not implement:
 
-- Lead scraping
-- Lead sourcing
+- Live lead scraping
+- Live lead sourcing from third-party sites
 - Hermes integration
 - Real LinkedIn automation
 - Real Reddit automation

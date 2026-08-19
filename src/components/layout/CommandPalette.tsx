@@ -58,6 +58,7 @@ export function CommandPalette({
                 <Command.Empty className="px-3 py-6 text-muted">No matching actions.</Command.Empty>
                 <Command.Group heading="Navigate" className="px-1 py-1 text-[11px] font-medium text-faint">
                   <Item onSelect={() => go("/haki")}>Haki AI</Item>
+                  <Item onSelect={() => go("/universal")}>Haki Universal (Beta)</Item>
                   <Item onSelect={() => go("/overview")}>Overview</Item>
                   <Item onSelect={() => go("/hermes")}>Open Hermes</Item>
                   <Item onSelect={() => go("/leads")}>Search leads</Item>
