@@ -102,6 +102,26 @@ export default function SettingsPage() {
         </section>
 
         <section className="rounded-lg border border-line bg-surface p-5">
+          <div className="text-sm font-medium">Haki AI sessions</div>
+          <p className="mt-2 text-sm text-muted">
+            Testing phase. Flush every chat session. Campaigns and leads stay put.
+          </p>
+          <Button
+            className="mt-3"
+            variant="danger"
+            size="sm"
+            onClick={async () => {
+              await api("/api/hermes/sessions", { method: "DELETE" });
+              sessionStorage.removeItem("haki:workspace-session");
+              window.dispatchEvent(new Event("haki-sessions-changed"));
+              window.location.href = "/haki";
+            }}
+          >
+            Flush all sessions
+          </Button>
+        </section>
+
+        <section className="rounded-lg border border-line bg-surface p-5">
           <div className="text-sm font-medium">Dummy data</div>
           <p className="mt-2 text-sm text-muted">
             Until your own list is ready, Haki loads 20 demo contacts with dummy social links, qualification scores, and a draft campaign.

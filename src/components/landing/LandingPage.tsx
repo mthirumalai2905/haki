@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { motion } from "motion/react";
+import { cn } from "@/lib/utils";
 import { scrollToId, useLandingSmoothScroll } from "./smooth-scroll";
-import { TrustStrip } from "./TrustStrip";
 
 const ROWS = [
   ["Pilon Fry House", "Sofia Mendez", "casa@pilonfryhouse.demo", "Qualified"],
@@ -14,43 +14,28 @@ const ROWS = [
 ];
 
 const STEPS = [
-  { n: "01", title: "Upload", body: "Bring a CSV or XLSX you already have. Haki does not scrape leads." },
-  { n: "02", title: "Preview", body: "See the first 100 rows. Map fields. Confirm what gets imported." },
-  { n: "03", title: "Ask Haki", body: "Say who to reach and what you want. Hermes drafts the workflow." },
-  { n: "04", title: "Review", body: "Nothing sends until you approve. Simulation first, providers later." },
-];
-
-const PILLARS = [
-  {
-    title: "You bring the list",
-    body: "Haki starts after sourcing. Upload the file, see what mapped, and keep custom fields intact.",
-  },
-  {
-    title: "Haki drafts the path",
-    body: "One workflow across email, LinkedIn, WhatsApp, SMS, and more. It waits, branches, and stops on a reply.",
-  },
-  {
-    title: "You get what you asked for",
-    body: "Describe the goal. Review the plan. Launch when it is right. The campaign keeps running after you close the tab.",
-  },
+  { n: "01", title: "Upload", body: "Bring a CSV or XLSX you already have. Haki does not scrape leads.", accent: "bg-[#3b82f6]" },
+  { n: "02", title: "Preview", body: "See the first 100 rows. Map fields. Confirm what gets imported.", accent: "bg-[#f97316]" },
+  { n: "03", title: "Ask Haki", body: "Say who to reach and what you want. Hermes drafts the workflow.", accent: "bg-[#af52de]" },
+  { n: "04", title: "Review", body: "Nothing sends until you approve. Simulation first, providers later.", accent: "bg-[#34c759]" },
 ];
 
 const FLOW = ["Data", "Leads", "AI", "Goal", "Workflow", "Outreach", "Conversations", "Outcomes"];
 
 const CHANNELS = [
-  { name: "Email", note: "First touch and follow-up" },
-  { name: "LinkedIn", note: "Connect, then message" },
-  { name: "WhatsApp", note: "Short personalized close" },
-  { name: "X", note: "Public context before you write" },
-  { name: "YouTube", note: "Simulated sapien / intel" },
-  { name: "SMS", note: "When email stays quiet" },
-  { name: "Phone", note: "Booked when the path asks" },
+  { name: "Email", note: "First touch and follow-up", swatch: "bg-[#007aff]" },
+  { name: "LinkedIn", note: "Connect, then message", swatch: "bg-[#0A66C2]" },
+  { name: "WhatsApp", note: "Short personalized close", swatch: "bg-[#25D366]" },
+  { name: "X", note: "Public context before you write", swatch: "bg-[#1d1d1f]" },
+  { name: "YouTube", note: "Simulated sapien / intel", swatch: "bg-[#ff375f]" },
+  { name: "SMS", note: "When email stays quiet", swatch: "bg-[#5856d6]" },
+  { name: "Phone", note: "Booked when the path asks", swatch: "bg-[#ff9f0a]" },
 ];
 
 const PAINS = [
-  { title: "Email in one tab", body: "The first touch goes out. The follow-up lives in a calendar reminder you ignore by Thursday." },
-  { title: "LinkedIn in another", body: "Someone was supposed to connect after 24 hours. Nobody owns that step, so it does not happen." },
-  { title: "WhatsApp as an afterthought", body: "The close sits in a notes app. The lead already went cold." },
+  { title: "Email in one tab", body: "The first touch goes out. The follow-up lives in a calendar reminder you ignore by Thursday.", tint: "bg-[#e8f1ff]" },
+  { title: "LinkedIn in another", body: "Someone was supposed to connect after 24 hours. Nobody owns that step, so it does not happen.", tint: "bg-[#e8f8ff]" },
+  { title: "WhatsApp as an afterthought", body: "The close sits in a notes app. The lead already went cold.", tint: "bg-[#e9f9ee]" },
 ];
 
 const FEATURES = [
@@ -84,14 +69,17 @@ const AUDIENCE = [
   {
     title: "Operators with a list already",
     body: "You bought the file, exported the CRM, or pulled it from Hermes. You need a campaign, not another database.",
+    head: "bg-[#d6e8ff]",
   },
   {
     title: "Agencies running client outreach",
     body: "One workspace per list. Preview, map, review, then show the client the path before a single touch goes out.",
+    head: "bg-[#ffe8a3]",
   },
   {
     title: "Founders who want meetings",
     body: "Say the goal in a sentence. Edit the draft. Watch replies and booked calls without living in five tools.",
+    head: "bg-[#ffd4dc]",
   },
 ];
 
@@ -324,7 +312,18 @@ export function LandingPage() {
         </div>
       </div>
 
-      <TrustStrip />
+      <section className="relative overflow-hidden bg-gradient-to-b from-sky-50 to-[#f4f4f2] py-20">
+        <div className="mx-auto max-w-4xl px-6 text-center">
+          <p className="text-[15px] leading-6 text-muted">
+            Haki does not care where the file came from. Upload what you already have.
+          </p>
+          <div className="mt-10 flex flex-wrap items-end justify-center gap-5">
+            <FileWidget name="leads.csv" meta="Comma file" tone="bg-[#3b82f6]" tilt="-rotate-3" />
+            <FileWidget name="owners.xlsx" meta="Spreadsheet" tone="bg-[#f97316]" tilt="rotate-2" />
+            <FileWidget name="export.json" meta="Structured" tone="bg-[#ef4444]" tilt="-rotate-1" />
+          </div>
+        </div>
+      </section>
 
       <Reveal id="how" className="mx-auto w-full max-w-[1600px] px-4 py-28 sm:px-6">
         <p className="text-center text-[13px] text-muted">How Haki works</p>
@@ -359,49 +358,68 @@ export function LandingPage() {
           </div>
         </div>
 
-        <div className="mx-auto mt-14 grid max-w-5xl gap-4 sm:grid-cols-3">
-          {PILLARS.map((pillar, index) => (
-            <Reveal key={pillar.title} delay={index * 0.06} className="rounded-[18px] border border-line bg-white p-5">
-              <div className="text-[12px] text-faint">0{index + 1}</div>
-              <div className="mt-2 text-[16px] font-medium">{pillar.title}</div>
-              <p className="mt-2 text-[13px] leading-6 text-muted">{pillar.body}</p>
-            </Reveal>
-          ))}
-        </div>
-
-        <div className="mt-16 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="relative mx-auto mt-20 max-w-3xl">
+          <div className="absolute bottom-4 left-[19px] top-4 w-px bg-gradient-to-b from-[#007aff] via-[#af52de] to-[#34c759]" />
           {STEPS.map((step, index) => (
-            <Reveal key={step.n} delay={index * 0.06} className="rounded-[18px] border border-line bg-white p-5">
-              <div className="text-[12px] text-faint">{step.n}</div>
-              <div className="mt-2 text-[16px] font-medium">{step.title}</div>
-              <p className="mt-2 text-[13px] leading-6 text-muted">{step.body}</p>
+            <Reveal key={step.n} delay={index * 0.08} className="relative flex gap-6 pb-12 last:pb-0">
+              <span
+                className={`relative z-10 mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-[12px] font-semibold text-white shadow-[0_8px_20px_rgba(0,0,0,0.12)] ${step.accent}`}
+              >
+                {step.n}
+              </span>
+              <div className="min-w-0 flex-1">
+                <div className="font-serif text-[28px] italic tracking-[-0.03em]">{step.title}</div>
+                <p className="mt-2 max-w-xl text-[15px] leading-7 text-muted">{step.body}</p>
+                {index === 0 ? (
+                  <div className="mt-4 flex gap-2">
+                    <span className="rounded-full bg-[#3b82f6] px-2.5 py-1 text-[11px] text-white">CSV</span>
+                    <span className="rounded-full bg-[#f97316] px-2.5 py-1 text-[11px] text-white">XLSX</span>
+                    <span className="rounded-full bg-[#ef4444] px-2.5 py-1 text-[11px] text-white">JSON</span>
+                  </div>
+                ) : null}
+              </div>
             </Reveal>
           ))}
         </div>
       </Reveal>
 
-      <section className="border-y border-line bg-white/60 py-20">
-        <div className="mx-auto max-w-5xl px-6">
-          <p className="text-[13px] text-muted">The usual week</p>
-          <h2 className="mt-2 max-w-2xl text-[32px] font-semibold tracking-[-0.03em] sm:text-[36px]">
-            The list is ready. The follow-up is not.
-          </h2>
-          <p className="mt-4 max-w-xl text-[15px] leading-7 text-muted">
-            Most teams do not fail at finding a file. They fail at keeping the next touch honest across tools. Haki is
-            built for that gap.
-          </p>
-          <div className="mt-10 grid gap-4 sm:grid-cols-3">
-            {PAINS.map((pain) => (
-              <div key={pain.title} className="rounded-[18px] border border-line bg-[#f4f4f2] p-5">
-                <div className="text-[16px] font-medium">{pain.title}</div>
-                <p className="mt-2 text-[13px] leading-6 text-muted">{pain.body}</p>
-              </div>
-            ))}
+      <section className="relative overflow-hidden py-24">
+        <div className="absolute inset-0 bg-[radial-gradient(900px_420px_at_20%_0%,rgba(0,122,255,0.12),transparent_55%),radial-gradient(700px_380px_at_90%_80%,rgba(255,159,10,0.12),transparent_50%)]" />
+        <div className="relative mx-auto max-w-6xl px-6">
+          <div className="grid items-center gap-12 lg:grid-cols-[1fr_1.1fr]">
+            <div>
+              <p className="text-[13px] text-muted">The usual week</p>
+              <h2 className="mt-2 text-[32px] font-semibold tracking-[-0.03em] sm:text-[40px]">
+                The list is ready. The follow-up is not.
+              </h2>
+              <p className="mt-4 max-w-md text-[15px] leading-7 text-muted">
+                Most teams do not fail at finding a file. They fail at keeping the next touch honest across tools.
+              </p>
+            </div>
+            <div className="relative mx-auto h-[340px] w-full max-w-md">
+              {PAINS.map((pain, index) => (
+                <div
+                  key={pain.title}
+                  className={`absolute left-0 right-0 rounded-[22px] p-5 shadow-[0_22px_50px_rgba(15,23,42,0.12)] ${pain.tint} ${
+                    index === 0 ? "top-0 rotate-[-4deg]" : index === 1 ? "top-[92px] rotate-[3deg]" : "top-[184px] rotate-[-2deg]"
+                  }`}
+                >
+                  <div className="mb-2 flex gap-1.5">
+                    <span className="h-2 w-2 rounded-full bg-[#ff5f57]" />
+                    <span className="h-2 w-2 rounded-full bg-[#febc2e]" />
+                    <span className="h-2 w-2 rounded-full bg-[#28c840]" />
+                  </div>
+                  <div className="text-[16px] font-medium">{pain.title}</div>
+                  <p className="mt-2 text-[13px] leading-6 text-muted">{pain.body}</p>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </section>
 
       <Reveal id="product" className="mx-auto max-w-5xl px-6 py-28">
+        <div className="rounded-[32px] bg-gradient-to-br from-white via-[#f7fbff] to-[#fff6ea] px-6 py-14 sm:px-10">
         <p className="text-[13px] text-muted">Product</p>
         <h2 className="mt-2 max-w-2xl text-[32px] font-semibold tracking-[-0.03em] sm:text-[36px]">
           Built like an outreach desk, not a newsletter tool
@@ -429,6 +447,7 @@ export function LandingPage() {
             </div>
           ))}
         </div>
+        </div>
       </Reveal>
 
       <Reveal className="mx-auto max-w-5xl px-6 pb-24">
@@ -437,58 +456,80 @@ export function LandingPage() {
           If you still need a database of strangers, you are earlier than Haki. If you already have names and a goal,
           this is the desk.
         </p>
-        <div className="mt-10 grid gap-4 sm:grid-cols-3">
+        <div className="mt-10 grid gap-5 sm:grid-cols-3">
           {AUDIENCE.map((item) => (
-            <div key={item.title} className="rounded-[18px] border border-line bg-white p-5">
-              <div className="text-[16px] font-medium">{item.title}</div>
-              <p className="mt-2 text-[13px] leading-6 text-muted">{item.body}</p>
-            </div>
+            <FloatCard key={item.title}>
+              <div className={`px-5 py-4 ${item.head}`}>
+                <div className="text-[16px] font-medium">{item.title}</div>
+              </div>
+              <p className="px-5 py-4 text-[13px] leading-6 text-muted">{item.body}</p>
+            </FloatCard>
           ))}
         </div>
       </Reveal>
 
       <Reveal className="mx-auto max-w-5xl px-6 pb-24">
         <h2 className="text-[32px] font-semibold tracking-[-0.03em]">What you put down</h2>
-        <div className="mt-8 overflow-hidden rounded-[20px] border border-line bg-white">
-          <div className="grid grid-cols-2 border-b border-line bg-[#f7f7f8] text-[12px] font-medium uppercase tracking-[0.1em] text-faint">
-            <div className="px-5 py-3">The pile of tools</div>
-            <div className="border-l border-line px-5 py-3">On Haki</div>
+        <div className="mt-8 grid gap-5 md:grid-cols-2">
+          <FloatCard className="-rotate-1">
+            <div className="bg-[#1d1d1f] px-5 py-3 text-[12px] font-medium uppercase tracking-[0.1em] text-white/70">
+              The pile of tools
+            </div>
+            <ul className="divide-y divide-line">
+              {COMPARE.map((row) => (
+                <li key={row.old} className="px-5 py-3.5 text-[14px] leading-6 text-muted">
+                  {row.old}
+                </li>
+              ))}
+            </ul>
+          </FloatCard>
+          <FloatCard className="rotate-1" accent="bg-[#007aff]">
+            <div className="bg-[#e8f1ff] px-5 py-3 text-[12px] font-medium uppercase tracking-[0.1em] text-accent">
+              On Haki
+            </div>
+            <ul className="divide-y divide-line">
+              {COMPARE.map((row) => (
+                <li key={row.next} className="px-5 py-3.5 text-[14px] leading-6">
+                  {row.next}
+                </li>
+              ))}
+            </ul>
+          </FloatCard>
+        </div>
+      </Reveal>
+
+      <section className="relative mb-28 overflow-hidden bg-[#111] py-20 text-white">
+        <div className="absolute inset-0 opacity-40 [background:radial-gradient(circle_at_20%_20%,#007aff55,transparent_40%),radial-gradient(circle_at_80%_70%,#af52de44,transparent_35%)]" />
+        <div className="relative mx-auto max-w-6xl px-6">
+          <h2 className="max-w-xl font-serif text-[40px] italic tracking-[-0.03em] sm:text-[48px]">
+            One path. Every channel. A stop when they answer.
+          </h2>
+          <p className="mt-4 max-w-lg text-[15px] leading-7 text-white/65">
+            Email is one channel. Haki is the desk that keeps the next touch in the same campaign.
+          </p>
+          <div className="mt-10 flex gap-3 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {FLOW.map((item) => (
+              <span
+                key={item}
+                className="shrink-0 rounded-full border border-white/15 bg-white/10 px-5 py-2.5 text-[14px] font-medium backdrop-blur"
+              >
+                {item}
+              </span>
+            ))}
           </div>
-          {COMPARE.map((row) => (
-            <div key={row.old} className="grid grid-cols-2 border-b border-line last:border-0 text-[14px] leading-6">
-              <div className="px-5 py-4 text-muted">{row.old}</div>
-              <div className="border-l border-line px-5 py-4">{row.next}</div>
-            </div>
-          ))}
+          <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {CHANNELS.map((channel) => (
+              <div key={channel.name} className="rounded-[20px] bg-white/10 px-4 py-4 ring-1 ring-white/10">
+                <div className="flex items-center gap-2">
+                  <span className={`h-2 w-2 rounded-full ${channel.swatch}`} />
+                  <div className="text-[15px] font-medium">{channel.name}</div>
+                </div>
+                <p className="mt-2 text-[13px] leading-5 text-white/55">{channel.note}</p>
+              </div>
+            ))}
+          </div>
         </div>
-      </Reveal>
-
-      <Reveal className="mx-auto max-w-5xl px-6 pb-24">
-        <h2 className="text-center text-[32px] font-semibold tracking-[-0.03em]">The operating system, not the blast</h2>
-        <p className="mx-auto mt-3 max-w-xl text-center text-[15px] leading-7 text-muted">
-          Email is one channel. Haki is the path from a file you already have to a conversation you can review.
-        </p>
-        <div className="mt-12 flex flex-wrap items-center justify-center gap-2">
-          {FLOW.map((item, index) => (
-            <div key={item} className="flex items-center gap-2">
-              <span className="rounded-full border border-line bg-white px-4 py-2 text-[13px] font-medium">{item}</span>
-              {index < FLOW.length - 1 ? <span className="text-[12px] text-faint">→</span> : null}
-            </div>
-          ))}
-        </div>
-      </Reveal>
-
-      <Reveal className="mx-auto max-w-5xl px-6 pb-28">
-        <h2 className="text-center text-[32px] font-semibold tracking-[-0.03em]">One workflow. Every channel.</h2>
-        <div className="mt-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {CHANNELS.map((channel, index) => (
-            <Reveal key={channel.name} delay={index * 0.05} className="rounded-[18px] border border-line bg-white px-4 py-4">
-              <div className="text-[15px] font-medium">{channel.name}</div>
-              <p className="mt-1 text-[13px] leading-5 text-muted">{channel.note}</p>
-            </Reveal>
-          ))}
-        </div>
-      </Reveal>
+      </section>
 
       <Reveal id="stories" className="mx-auto max-w-7xl px-6 pb-28">
         <h2 className="text-center text-[36px] font-semibold tracking-[-0.03em]">Loved by operators who run the path</h2>
@@ -497,7 +538,7 @@ export function LandingPage() {
         </p>
         <div className="mt-12 columns-1 gap-4 sm:columns-2 lg:columns-3 xl:columns-5">
           {TESTIMONIALS.map((item) => (
-            <article key={item.handle} className="mb-4 break-inside-avoid rounded-xl border border-line bg-white p-4">
+            <article key={item.handle} className="mb-4 break-inside-avoid rounded-[22px] bg-white p-4 shadow-[0_16px_40px_rgba(15,23,42,0.07)] ring-1 ring-black/[0.04]">
               <div className="flex items-center gap-2.5">
                 <img
                   src={`https://api.dicebear.com/9.x/notionists/svg?seed=${encodeURIComponent(item.name)}`}
@@ -528,7 +569,7 @@ export function LandingPage() {
 
       <Reveal id="faq" className="mx-auto max-w-3xl px-6 pb-16">
         <h2 className="text-[32px] font-semibold tracking-[-0.03em]">Questions people ask first</h2>
-        <div className="mt-8 divide-y divide-line rounded-[20px] border border-line bg-white">
+        <div className="mt-8 divide-y divide-line overflow-hidden rounded-[24px] bg-white shadow-[0_18px_50px_rgba(15,23,42,0.08)] ring-1 ring-black/[0.04]">
           {FAQS.map((item) => (
             <details key={item.q} className="group px-5 py-4">
               <summary className="cursor-pointer list-none text-[15px] font-medium tracking-[-0.02em] [&::-webkit-details-marker]:hidden">
@@ -596,9 +637,53 @@ export function LandingPage() {
   );
 }
 
+function FloatCard({
+  children,
+  className,
+  accent,
+}: {
+  children: React.ReactNode;
+  className?: string;
+  accent?: string;
+}) {
+  return (
+    <div
+      className={cn(
+        "overflow-hidden rounded-[24px] bg-white shadow-[0_18px_50px_rgba(15,23,42,0.08)] ring-1 ring-black/[0.04]",
+        className,
+      )}
+    >
+      {accent ? <div className={cn("h-1.5 w-full", accent)} /> : null}
+      {children}
+    </div>
+  );
+}
+
+function FileWidget({
+  name,
+  meta,
+  tone,
+  tilt,
+}: {
+  name: string;
+  meta: string;
+  tone: string;
+  tilt: string;
+}) {
+  return (
+    <div className={cn("w-[180px] rounded-[22px] bg-white p-3 shadow-[0_22px_50px_rgba(15,23,42,0.12)]", tilt)}>
+      <div className={cn("rounded-[16px] px-3 py-4 text-left text-white", tone)}>
+        <div className="text-[13px] font-semibold">{name}</div>
+        <div className="mt-1 text-[11px] text-white/80">{meta}</div>
+      </div>
+      <div className="mt-2 px-1 text-[11px] text-faint">Ready to map</div>
+    </div>
+  );
+}
+
 function FeaturePanel({ index }: { index: number }) {
   const panels = [
-    <div key="ingest" className="rounded-[20px] border border-line bg-white p-5 shadow-[0_16px_40px_rgba(0,0,0,0.04)]">
+    <div key="ingest" className="rounded-[24px] bg-white p-5 shadow-[0_22px_50px_rgba(15,23,42,0.1)] ring-1 ring-black/[0.04]">
       <div className="text-[11px] uppercase tracking-[0.12em] text-faint">File preview</div>
       <div className="mt-3 space-y-2 text-[13px]">
         <div className="flex justify-between rounded-[10px] bg-[#f7f7f8] px-3 py-2">
@@ -619,7 +704,7 @@ function FeaturePanel({ index }: { index: number }) {
         </div>
       </div>
     </div>,
-    <div key="qualify" className="rounded-[20px] border border-line bg-white p-5 shadow-[0_16px_40px_rgba(0,0,0,0.04)]">
+    <div key="qualify" className="rounded-[24px] bg-white p-5 shadow-[0_22px_50px_rgba(15,23,42,0.1)] ring-1 ring-black/[0.04]">
       <div className="text-[11px] uppercase tracking-[0.12em] text-faint">ICP match</div>
       <div className="mt-4 text-[40px] font-semibold tracking-[-0.04em]">87</div>
       <div className="text-[13px] text-good">Qualified</div>
@@ -627,7 +712,7 @@ function FeaturePanel({ index }: { index: number }) {
         SaaS, 50 to 500 people, United States, founder title. The contact sits inside the band you wrote.
       </p>
     </div>,
-    <div key="flow" className="rounded-[20px] border border-line bg-white p-5 shadow-[0_16px_40px_rgba(0,0,0,0.04)]">
+    <div key="flow" className="rounded-[24px] bg-white p-5 shadow-[0_22px_50px_rgba(15,23,42,0.1)] ring-1 ring-black/[0.04]">
       <div className="text-[11px] uppercase tracking-[0.12em] text-faint">Path</div>
       <div className="mt-4 space-y-3 text-[13px]">
         {["Lead enters", "Email", "Wait 24 hours", "Replied? Stop", "LinkedIn, then WhatsApp"].map((step, i) => (
@@ -638,7 +723,7 @@ function FeaturePanel({ index }: { index: number }) {
         ))}
       </div>
     </div>,
-    <div key="review" className="rounded-[20px] border border-line bg-white p-5 shadow-[0_16px_40px_rgba(0,0,0,0.04)]">
+    <div key="review" className="rounded-[24px] bg-white p-5 shadow-[0_22px_50px_rgba(15,23,42,0.1)] ring-1 ring-black/[0.04]">
       <div className="text-[11px] uppercase tracking-[0.12em] text-faint">Lead state</div>
       <div className="mt-4 space-y-2 text-[13px]">
         <div className="flex justify-between">

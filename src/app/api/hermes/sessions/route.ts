@@ -22,6 +22,18 @@ export async function GET() {
   }
 }
 
+export async function DELETE() {
+  try {
+    const workspace = await getWorkspace();
+    const result = await db.hermesThread.deleteMany({
+      where: { workspaceId: workspace.id },
+    });
+    return jsonOk({ deleted: result.count });
+  } catch (error) {
+    return jsonError(error);
+  }
+}
+
 export async function POST() {
   try {
     const workspace = await getWorkspace();

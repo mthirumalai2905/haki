@@ -42,7 +42,7 @@ Email is one channel, not the product.
 8. **Preserve custom fields.** Unknown columns are not discarded.
 9. **Companies and contacts** are separate. One company can have many contacts.
 10. Copy should sound like an operator wrote it. Avoid long em dashes and generic “AI platform” sludge.
-11. Landing and marketing must not claim Google, SpaceX, Harvard, or similar as customers. Logo strip is “bring a CSV from tools you already sit in,” not social proof.
+11. Landing and marketing must not claim Google, SpaceX, Harvard, or similar as customers. File widgets (CSV / XLSX / JSON) mean “bring a list you already have,” not social proof.
 
 ---
 
@@ -116,11 +116,11 @@ src/app/leads/                Lead table + /leads/import
 src/app/campaigns/            List, new, [id] canvas
 src/app/sequences/            Reusable workflows
 src/app/analytics/            Metrics
-src/app/settings/             Workspace + DeepSeek status + sample data
+src/app/settings/             Workspace + DeepSeek status + sample data + flush all sessions
 src/app/api/                  Route handlers (JSON { success, data } or error)
 src/components/landing/       Marketing page
 src/components/haki/          Haki AI home, preview, markdown
-src/components/universal/     Universal plan + live collection cards
+src/components/universal/     Universal plan + live collection table + record panel
 src/components/layout/        AppFrame, Sidebar, TopBar, CommandPalette
 src/components/workflow/      XYFlow canvas, nodes, Ask Haki
 src/components/leads/         Lead drawer
@@ -177,9 +177,9 @@ JSON columns are strings parsed with `parseJson` in `src/lib/utils.ts`.
 Sidebar (`src/components/layout/Sidebar.tsx`):
 
 - Logo (traffic lights + **Haki** + “An MK Labs Product”) → `/`
-- **Haki AI** → `/haki` (new session). **+** creates a thread and opens `/haki/{id}`
-- Nested session list: open, hover to **rename** or **delete**
-- Universal (Beta badge), Overview, Hermes, Leads, Campaigns, Sequences, Analytics
+- Nav items: Universal (Beta), Overview, Hermes, Leads, Campaigns, Sequences, Analytics
+- **Haki AI** sits at the **bottom** as a drawer. Click the row to open/close the session list. **+** creates a thread and opens `/haki/{id}`
+- Nested session list: open, hover to **rename** or **delete**. Deletes use in-app toasts (`Toaster` in `AppFrame`), not `window.confirm`
 - Footer: Simulation mode, Settings
 
 Haki AI is the primary product surface. Hermes remains a dedicated studio page.
@@ -188,18 +188,18 @@ Haki AI is the primary product surface. Hermes remains a dedicated studio page.
 
 ## 9. Landing page (`/`)
 
-`src/components/landing/LandingPage.tsx` plus `TrustStrip.tsx`, `smooth-scroll.ts`.
+`src/components/landing/LandingPage.tsx` plus `smooth-scroll.ts`. There is **no** logo/trust strip.
 
 Shipped sections:
 
 - Hero over landscape image, pill nav (How it works, Product, Stories, FAQ, Open Haki)
 - Fake app preview of Haki AI
-- White **trust strip**: colorful local SVG marks (Google, Microsoft, Salesforce, HubSpot, Notion, Slack, Sheets, Excel, Gmail, LinkedIn, WhatsApp, Hermes). Copy: bring a CSV from tools you already use. **Not** “used by these companies.”
-- How it works: copy + **full uncropped** walkthrough video `public/haki-walkthrough.webm` (object-contain, wide)
-- Problem (email / LinkedIn / WhatsApp in different tabs)
-- Product feature rows: ingest, qualify, workflow, review
+- File widgets (CSV / XLSX / JSON): bring a list from tools you already sit in. **Not** “used by these companies.”
+- How it works: vertical spine + copy + **full uncropped** walkthrough video `public/haki-walkthrough.webm` (object-contain, wide)
+- Problem: overlapping “messy tab” cards (email / LinkedIn / WhatsApp)
+- Product on a paper stage: ingest, qualify, workflow, review
 - Who it is for; comparison table
-- Flow chips; channel grid
+- Flow chips; dark channel strip
 - Testimonials masonry (original names/quotes about multi-touch; not Aceternity copy)
 - FAQ (scrape, send, files, channels, closing the browser)
 - About + footer wordmark **Haki** + “An MK Labs Product”
@@ -215,12 +215,14 @@ Avoid em dashes in marketing copy.
 **UI:** `src/components/haki/HakiHome.tsx`
 
 - Split: chat | optional ingest/campaign preview (`IngestPreview`)
+- **Desk bar** (always on): **Leads** opens the right table, **Campaign** opens the drafted workflow, **Hide table** closes the pane. Do not rely on chat language alone.
+- Preview also opens on “show leads / preview / table” language, or when a campaign is drafted
+- After first send on `/haki`, `router.replace(/haki/{threadId})`. Keep the right pane open across that navigation. Persist `showPreview` and `tab` in `haki:workspace-session`
 - Empty state: “Who do you want to reach?”, starters from `/api/hermes/starters`
 - Chat: user bubbles, assistant markdown, tool chips
 - Composer (large): textarea, Upload file, **mic (Web Speech API, Chrome/Edge)**, **context ring** (H mark, ~64k estimated tokens from messages + draft + input, chars/4 + overhead), send
-- After first send on `/haki`, `router.replace(/haki/{threadId})`
-- Preview opens on “show leads / preview” language or when a campaign is drafted
 - Save draft / open campaign via `/api/campaigns`
+- `sessionStorage` key `haki:seed`: one-shot prompt. Universal **Open in Haki AI** writes it; Haki AI consumes and sends it on load
 
 **Sessions API:**
 
@@ -230,10 +232,11 @@ Avoid em dashes in marketing copy.
 | POST | `/api/hermes/sessions` | Create “New session” |
 | PATCH | `/api/hermes/sessions/[id]` | Rename (keeps title on later chat if not default) |
 | DELETE | `/api/hermes/sessions/[id]` | Delete; if active, sidebar sends user to `/haki` |
+| DELETE | `/api/hermes/sessions` | Flush **all** campaign threads. Settings testing control. Leads and campaigns stay. |
 | GET | `/api/hermes/session?threadId=` | Load messages + proposal |
 | POST | `/api/hermes/chat` | Turn: scope + tools + persist thread |
 
-Local `sessionStorage` key `haki:workspace-session` stores last thread/proposal for the same session id.
+Local `sessionStorage` key `haki:workspace-session` stores last thread, proposal, `showPreview`, and `tab` for the same session id.
 
 Chat titles: auto-title only if title is empty, `New session`, or `Hermes`. Manual rename is kept.
 
@@ -276,9 +279,9 @@ Operator writes a sourcing brief. DeepSeek (or local plan) produces a plan (titl
 
 Stream events: plan, thought, status, hit, done, error (`src/lib/universal/types.ts`).
 
-**UI:** plan pane + `CollectionPreview` (cards, stats, filter, CSV, Import into `/leads/import`). Not a plain dump table.
+**UI:** plan pane + `CollectionPreview`. Live hits are a **dense table** (index, company, contact, place, site). Click a row for a **record panel**: every collected field, blanks stay blank. **Open in Haki AI** seeds `/haki` with that record (`haki:seed`). Website is a separate external link. CSV and Import still go to `/leads/import`.
 
-Rules: no invented contact fields; never claim a listing site was scraped.
+Rules: no invented contact fields; never claim a listing site was scraped. Do not restyle this as pill-heavy “AI cards.”
 
 API: `POST /api/universal` (NDJSON stream).
 
@@ -395,8 +398,8 @@ Treat this table as source of truth when suggesting work. “Spec” means CLAUD
 
 | Area | Status | Notes |
 | --- | --- | --- |
-| Landing + MK Labs | Shipped | Video, stories, FAQ, trust strip (sources, not customers) |
-| Haki AI chat + sessions | Shipped | Create, list, rename, delete, voice, context ring |
+| Landing + MK Labs | Shipped | Video, stories, FAQ, file widgets (not customer logos) |
+| Haki AI chat + sessions | Shipped | Drawer sessions, desk bar, voice, context ring, flush-all |
 | Ingest CSV/XLSX | Shipped | JSON accepted in parser |
 | Lead table + drawer | Shipped | |
 | ICP qualify | Shipped | AI + fallback |
@@ -408,7 +411,7 @@ Treat this table as source of truth when suggesting work. “Spec” means CLAUD
 | Auth / multi-user | Not shipped | One workspace |
 | Reply inbox / real classification loop | Partial | `ai.classifyReply` exists; not a full mailbox |
 | AI decision node in canvas | Spec / thin | Prompted in generateWorkflow |
-| Universal open data | Shipped Beta | Wikidata + Overpass only |
+| Universal open data | Shipped Beta | Wikidata + Overpass. Table + record panel + Haki AI seed |
 | Lead scraping | Forbidden | |
 | CRM / API ingest | Spec later | File upload first |
 | Instagram/YouTube as real send | Simulated intel or palette only | Never fake a send |

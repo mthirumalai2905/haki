@@ -6,6 +6,8 @@ export type HakiWorkspaceSession = {
   threadId?: string;
   campaignId?: string;
   proposal?: HermesProposal | null;
+  showPreview?: boolean;
+  tab?: "leads" | "campaign";
 };
 
 export function readWorkspaceSession(): HakiWorkspaceSession {

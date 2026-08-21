@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowUp, FileUp, Mic, Sparkles } from "lucide-react";
+import { ArrowUp, FileUp, Mic, PanelRight, Sparkles, Table2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { api } from "@/lib/api";
 import { IngestPreview, type PreviewLead } from "./IngestPreview";
@@ -63,21 +63,22 @@ export function HakiHome({ sessionId }: { sessionId?: string }) {
     setInput("");
     setProposal(null);
     setCampaignId(undefined);
-    setShowPreview(false);
-    setTab("leads");
     setThreadId(sessionId);
 
-    if (!sessionId) {
-      return;
-    }
-
     const local = readWorkspaceSession();
-    if (local.threadId === sessionId && local.proposal?.workflow) {
-      setProposal(local.proposal);
-      setCampaignId(local.campaignId);
+    const sameDesk = Boolean(sessionId && local.threadId === sessionId);
+    if (sameDesk) {
+      if (local.proposal?.workflow) setProposal(local.proposal);
+      if (local.campaignId) setCampaignId(local.campaignId);
       setThreadId(local.threadId);
+      setShowPreview(local.showPreview ?? Boolean(local.proposal?.workflow));
+      setTab(local.tab ?? (local.proposal?.workflow ? "campaign" : "leads"));
+    } else if (!sessionId && local.showPreview) {
       setShowPreview(true);
-      setTab("campaign");
+      setTab(local.tab ?? "leads");
+    } else {
+      setShowPreview(false);
+      setTab("leads");
     }
 
     api<{
@@ -88,20 +89,28 @@ export function HakiHome({ sessionId }: { sessionId?: string }) {
     }>(`/api/hermes/session?threadId=${encodeURIComponent(sessionId)}`)
       .then((remote) => {
         setThreadId(remote.threadId || sessionId);
-        if (remote.messages?.length) setMessages(remote.messages);
+        if (remote.messages?.length) {
+          setMessages(remote.messages);
+          if (remote.messages.some((item) => item.role === "user" && wantsPreview(item.content))) {
+            setShowPreview(true);
+            setTab("leads");
+          }
+        }
         if (remote.proposal?.workflow) {
           setProposal(remote.proposal);
           setCampaignId(remote.campaignId || remote.proposal.campaignId);
           setShowPreview(true);
-          setTab("campaign");
+          if (!remote.messages?.some((item) => item.role === "user" && wantsPreview(item.content))) {
+            setTab("campaign");
+          }
         }
       })
       .catch(() => undefined);
   }, [sessionId]);
 
   useEffect(() => {
-    writeWorkspaceSession({ threadId, campaignId, proposal });
-  }, [threadId, campaignId, proposal]);
+    writeWorkspaceSession({ threadId, campaignId, proposal, showPreview, tab });
+  }, [threadId, campaignId, proposal, showPreview, tab]);
 
   useEffect(() => {
     end.current?.scrollIntoView({ behavior: "smooth" });
@@ -213,17 +222,30 @@ export function HakiHome({ sessionId }: { sessionId?: string }) {
         className={`flex min-h-0 flex-col ${showPreview ? "min-w-[240px] shrink-0" : "min-w-0 flex-1"}`}
         style={showPreview ? { width: `${chatPct}%` } : undefined}
       >
+        <DeskBar
+          showPreview={showPreview}
+          tab={tab}
+          leadCount={total}
+          hasCampaign={Boolean(proposal?.workflow)}
+          onOpenLeads={() => {
+            setShowPreview(true);
+            setTab("leads");
+          }}
+          onOpenCampaign={() => {
+            setShowPreview(true);
+            setTab("campaign");
+          }}
+          onHide={() => setShowPreview(false)}
+          onSave={proposal ? saveDraft : undefined}
+          saving={saving}
+          campaignId={campaignId}
+        />
         {empty ? (
           <>
-            <div className="flex items-start justify-between px-8 pt-6">
+            <div className="px-8 pt-2">
               <p className="max-w-xl text-[13px] leading-5 text-muted">
                 Upload a file. Describe the goal. Haki drafts the workflow. Nothing reaches a person until you review it.
               </p>
-              {proposal ? (
-                <Button size="sm" onClick={saveDraft} disabled={saving}>
-                  {saving ? "Saving…" : campaignId ? "Open campaign" : "Save draft"}
-                </Button>
-              ) : null}
             </div>
             <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-8 pb-12">
               <h1 className="font-serif text-[48px] leading-none tracking-[-0.03em] text-ink">
@@ -265,13 +287,6 @@ export function HakiHome({ sessionId }: { sessionId?: string }) {
           </>
         ) : (
           <>
-            {proposal && showPreview ? (
-              <div className="flex justify-end px-6 py-3">
-                <Button size="sm" onClick={saveDraft} disabled={saving}>
-                  {saving ? "Saving…" : campaignId ? "Open campaign" : "Save draft"}
-                </Button>
-              </div>
-            ) : null}
             <div className="scrollbar-thin min-h-0 flex-1 overflow-auto">
               <div className="mx-auto w-full max-w-[680px] space-y-6 px-6 py-8">
                 {messages.map((item) =>
@@ -565,4 +580,72 @@ function ContextRing({ used, window, pct }: { used: number; window: number; pct:
 function formatTokens(value: number) {
   if (value >= 1000) return `${(value / 1000).toFixed(value >= 10_000 ? 0 : 1)}k`;
   return String(value);
+}
+
+function DeskBar({
+  showPreview,
+  tab,
+  leadCount,
+  hasCampaign,
+  onOpenLeads,
+  onOpenCampaign,
+  onHide,
+  onSave,
+  saving,
+  campaignId,
+}: {
+  showPreview: boolean;
+  tab: "leads" | "campaign";
+  leadCount: number;
+  hasCampaign: boolean;
+  onOpenLeads: () => void;
+  onOpenCampaign: () => void;
+  onHide: () => void;
+  onSave?: () => void;
+  saving: boolean;
+  campaignId?: string;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-3 border-b border-line px-5 py-2.5">
+      <div className="flex items-center gap-1.5">
+        <button
+          type="button"
+          onClick={onOpenLeads}
+          className={`inline-flex items-center gap-1.5 rounded-[8px] px-2.5 py-1.5 text-[12px] font-medium ${
+            showPreview && tab === "leads" ? "bg-accent-soft text-accent" : "text-muted hover:bg-[#f2f2f7] hover:text-ink"
+          }`}
+        >
+          <Table2 className="h-3.5 w-3.5" />
+          Leads{leadCount ? ` · ${leadCount}` : ""}
+        </button>
+        <button
+          type="button"
+          onClick={onOpenCampaign}
+          disabled={!hasCampaign}
+          className={`inline-flex items-center gap-1.5 rounded-[8px] px-2.5 py-1.5 text-[12px] font-medium disabled:opacity-35 ${
+            showPreview && tab === "campaign"
+              ? "bg-accent-soft text-accent"
+              : "text-muted hover:bg-[#f2f2f7] hover:text-ink"
+          }`}
+        >
+          <PanelRight className="h-3.5 w-3.5" />
+          Campaign
+        </button>
+        {showPreview ? (
+          <button
+            type="button"
+            onClick={onHide}
+            className="rounded-[8px] px-2.5 py-1.5 text-[12px] text-faint hover:bg-[#f2f2f7] hover:text-ink"
+          >
+            Hide table
+          </button>
+        ) : null}
+      </div>
+      {onSave ? (
+        <Button size="sm" onClick={onSave} disabled={saving}>
+          {saving ? "Saving…" : campaignId ? "Open campaign" : "Save draft"}
+        </Button>
+      ) : null}
+    </div>
+  );
 }
