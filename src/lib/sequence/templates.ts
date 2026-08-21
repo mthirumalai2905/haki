@@ -22,6 +22,18 @@ export function templateSteps(workflow: WorkflowGraph) {
   return [...workflow.nodes].sort((a, b) => a.position.y - b.position.y || a.position.x - b.position.x);
 }
 
+export function getSequenceTemplate(id: string) {
+  return SEQUENCE_TEMPLATES.find((item) => item.id === id) ?? null;
+}
+
+export function cloneWorkflow(workflow: WorkflowGraph): WorkflowGraph {
+  return {
+    ...workflow,
+    nodes: workflow.nodes.map((node) => ({ ...node, data: { ...node.data } })),
+    edges: workflow.edges.map((edge) => ({ ...edge })),
+  };
+}
+
 function node(id: string, x: number, y: number, data: WorkflowNodeData) {
   return { id, type: "haki", position: { x, y }, data };
 }

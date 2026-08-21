@@ -57,7 +57,7 @@ export function HermesStudio({
         }),
       });
       setSaving(false);
-      router.push(`/sequences?id=${created.id}`);
+      router.push("/sequences/library");
       return;
     }
 
@@ -126,7 +126,7 @@ export function HermesStudio({
         </div>
         <p className="text-xs text-muted">
           {kind === "sequence"
-            ? "Chat edits this canvas. Start from Templates if you want a ready path. Waits and conditions stay unless you ask to remove them."
+            ? "Chat edits this canvas. Templates live on their own page. Waits and conditions stay unless you ask to remove them."
             : "Chat edits retarget nodes on this canvas. Waits, conditions, and later touches stay unless you ask to remove them."}
         </p>
         <div className="min-h-0 flex-1">

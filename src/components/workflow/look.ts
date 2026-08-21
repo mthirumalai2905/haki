@@ -1,15 +1,15 @@
 import type { LucideIcon } from "lucide-react";
 import {
+  Camera,
   Clock,
   GitBranch,
-  Instagram,
-  Linkedin,
   Mail,
   MessageCircle,
   Phone,
   Play,
   Square,
-  Youtube,
+  UserRound,
+  Video,
 } from "lucide-react";
 import type { WorkflowNodeData } from "@/lib/types";
 
@@ -40,11 +40,11 @@ export function nodeTone(data: WorkflowNodeData) {
 
 export function nodeIcon(data: WorkflowNodeData): LucideIcon {
   if (data.channel === "email") return Mail;
-  if (data.channel === "linkedin") return Linkedin;
+  if (data.channel === "linkedin") return UserRound;
   if (data.channel === "whatsapp" || data.channel === "sms") return MessageCircle;
   if (data.channel === "phone") return Phone;
-  if (data.channel === "instagram") return Instagram;
-  if (data.channel === "youtube") return Youtube;
+  if (data.channel === "instagram") return Camera;
+  if (data.channel === "youtube") return Video;
   if (data.type === "wait") return Clock;
   if (data.type === "condition") return GitBranch;
   if (data.type === "end") return Square;

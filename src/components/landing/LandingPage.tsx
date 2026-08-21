@@ -224,7 +224,7 @@ export function LandingPage() {
     <div className="bg-[#f7f7f4] text-ink">
       <div className="p-3">
         <div
-          className="relative min-h-[92vh] overflow-hidden rounded-[20px] bg-cover bg-top"
+          className="relative flex h-[calc(100svh-1.5rem)] flex-col overflow-hidden rounded-[20px] bg-cover bg-top"
           style={{ backgroundImage: "url(/haki-landscape.png)" }}
         >
           <div className="absolute inset-0 bg-gradient-to-b from-white/35 via-transparent to-black/35" />
@@ -261,7 +261,7 @@ export function LandingPage() {
             </nav>
           </header>
 
-          <section className="relative z-10 mx-auto max-w-3xl px-6 pb-8 pt-24 text-center sm:pt-28">
+          <section className="relative z-10 mx-auto max-w-3xl shrink-0 px-6 pb-3 pt-10 text-center sm:pt-12">
             <motion.p
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
@@ -274,7 +274,7 @@ export function LandingPage() {
               initial={{ opacity: 0, y: 22 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, ease, delay: 0.08 }}
-              className="mt-4 text-[40px] font-semibold leading-[1.12] tracking-[-0.035em] text-[#1d1d1f] sm:text-[56px]"
+              className="mt-3 text-[36px] font-semibold leading-[1.12] tracking-[-0.035em] text-[#1d1d1f] sm:text-[48px]"
             >
               Turn a file into{" "}
               <em className="font-serif font-normal italic">multi-channel outreach</em>
@@ -283,7 +283,7 @@ export function LandingPage() {
               initial={{ opacity: 0, y: 18 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.7, ease, delay: 0.16 }}
-              className="mx-auto mt-5 max-w-lg text-[16px] leading-7 text-[#1d1d1f]/65"
+              className="mx-auto mt-3 max-w-lg text-[15px] leading-6 text-[#1d1d1f]/65"
             >
               Stop blasting a spreadsheet. Describe the goal. Haki drafts the workflow and waits for your review.
             </motion.p>
@@ -291,7 +291,7 @@ export function LandingPage() {
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.55, ease, delay: 0.22 }}
-              className="mt-8 flex items-center justify-center gap-3"
+              className="mt-5 flex items-center justify-center gap-3"
             >
               <Link
                 href="/haki"
@@ -307,26 +307,13 @@ export function LandingPage() {
                 See the path
               </button>
             </motion.div>
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.55, ease, delay: 0.3 }}
-              className="mx-auto mt-8 max-w-md"
-            >
-              <p className="font-serif text-[22px] italic tracking-[-0.02em] text-[#1d1d1f] sm:text-[26px]">
-                Peace of mind before anything sends
-              </p>
-              <p className="mt-2 text-[14px] leading-6 text-[#1d1d1f]/60">
-                You review the workflow first. Haki stays in simulation until a provider is connected.
-              </p>
-            </motion.div>
           </section>
 
           <motion.div
             initial={{ opacity: 0, y: 36 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.85, ease, delay: 0.26 }}
-            className="relative z-10 px-3 pt-8 sm:px-10 sm:pt-12"
+            className="relative z-10 mt-auto min-h-0 translate-y-[-48px] px-3 sm:translate-y-[-72px] sm:px-10"
           >
             <Link
               href="/haki"
@@ -527,19 +514,6 @@ export function LandingPage() {
             </details>
           ))}
         </div>
-      </Reveal>
-
-      <Reveal id="about" className="mx-auto max-w-2xl px-6 py-24 text-center">
-        <h2 className="font-serif text-[40px] italic tracking-[-0.03em]">Peace of mind before anything sends</h2>
-        <p className="mt-5 text-[16px] leading-8 text-muted">
-          Haki starts with a file you already have. It qualifies, sequences, and runs outreach in simulation until you connect a provider. You always review first, then the work runs toward the outcome you named.
-        </p>
-        <Link
-          href="/haki"
-          className="mt-8 inline-flex rounded-full bg-[#1d1d1f] px-5 py-2.5 text-[14px] font-medium text-white hover:bg-black"
-        >
-          Open Haki AI
-        </Link>
       </Reveal>
 
       <div className="px-3 pb-3">

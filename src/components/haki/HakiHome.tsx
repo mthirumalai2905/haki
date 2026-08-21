@@ -81,6 +81,8 @@ export function HakiHome({ sessionId }: { sessionId?: string }) {
       setTab("leads");
     }
 
+    if (!sessionId) return;
+
     api<{
       threadId?: string;
       campaignId?: string;

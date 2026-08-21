@@ -77,7 +77,7 @@ export function walkMainPath(graph: WorkflowGraph) {
   const trigger = graph.nodes.find((node) => node.data.type === "trigger");
   const seen = new Set<string>();
   const ordered: WorkflowGraph["nodes"] = [];
-  let id = trigger?.id ?? graph.nodes[0]?.id;
+  let id: string | undefined = trigger?.id ?? graph.nodes[0]?.id;
   while (id && !seen.has(id)) {
     seen.add(id);
     const node = graph.nodes.find((item) => item.id === id);
