@@ -261,7 +261,7 @@ export function LandingPage() {
             </nav>
           </header>
 
-          <section className="relative z-10 mx-auto max-w-3xl shrink-0 px-6 pb-3 pt-10 text-center sm:pt-12">
+          <section className="relative z-20 mx-auto max-w-3xl shrink-0 px-6 pb-6 pt-10 text-center sm:pb-8 sm:pt-12">
             <motion.p
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
@@ -313,7 +313,7 @@ export function LandingPage() {
             initial={{ opacity: 0, y: 36 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.85, ease, delay: 0.26 }}
-            className="relative z-10 mt-auto min-h-0 translate-y-[-48px] px-3 sm:translate-y-[-72px] sm:px-10"
+            className="relative z-10 min-h-0 flex-1 overflow-hidden px-3 sm:px-10"
           >
             <Link
               href="/haki"
