@@ -52,15 +52,18 @@ export default function SequenceTemplatePage() {
     );
   }
 
+  const current = template;
+  const graph = workflow;
+
   function openBuilder() {
-    writeSequenceSeed({ name: name || template.name, workflow });
+    writeSequenceSeed({ name: name || current.name, workflow: graph });
     router.push("/sequences/builder");
   }
 
   return (
     <AppShell
       flush
-      title={template.name}
+      title={current.name}
       subtitle="Preview this path. Edit the canvas, then open the builder."
       actions={<SequenceNav />}
     >
@@ -71,7 +74,7 @@ export default function SequenceTemplatePage() {
               All templates
             </Link>
             <input className="field mt-2 max-w-md" value={name} onChange={(event) => setName(event.target.value)} />
-            <p className="mt-2 max-w-2xl text-[13px] text-muted">{template.how}</p>
+            <p className="mt-2 max-w-2xl text-[13px] text-muted">{current.how}</p>
             <div className="mt-2 flex flex-wrap gap-1.5">
               {channels.map((channel) => (
                 <Badge key={channel} tone="info">
@@ -103,7 +106,7 @@ export default function SequenceTemplatePage() {
             </div>
           </div>
           <div className="min-h-[560px]">
-            <WorkflowCanvas value={workflow} onChange={setWorkflow} />
+            <WorkflowCanvas value={graph} onChange={setWorkflow} />
           </div>
         </div>
       </div>

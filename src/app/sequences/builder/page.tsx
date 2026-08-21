@@ -12,7 +12,13 @@ import type { WorkflowGraph } from "@/lib/types";
 
 export default function SequenceBuilderPage() {
   return (
-    <Suspense fallback={<AppShell title="Builder" subtitle="Loading." />}>
+    <Suspense
+      fallback={
+        <AppShell title="Builder" subtitle="Loading.">
+          <p className="p-6 text-sm text-muted">Loading the builder.</p>
+        </AppShell>
+      }
+    >
       <BuilderInner />
     </Suspense>
   );
