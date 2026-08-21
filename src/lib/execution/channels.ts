@@ -1,3 +1,4 @@
+import { resendConfigured, resendFrom, resendSendEnabled, sendResendEmail } from "../email/resend";
 import type { ChannelId } from "../types";
 
 export type ChannelResult = {
@@ -50,8 +51,37 @@ function comingSoon(id: ChannelId, label: string): ChannelProvider {
   };
 }
 
+function emailChannel(): ChannelProvider {
+  return {
+    id: "email",
+    label: "Email",
+    implemented: true,
+    async send(input) {
+      if (!resendConfigured()) {
+        return { ok: true, simulated: true, provider: "simulation", message: "Email action simulated" };
+      }
+      if (!resendSendEnabled()) {
+        return {
+          ok: true,
+          simulated: true,
+          provider: "resend",
+          message: "Resend is connected. Sends are off, so this campaign step stayed simulated.",
+        };
+      }
+      if (!resendFrom()) {
+        return { ok: false, simulated: false, provider: "resend", message: "RESEND_FROM is not set." };
+      }
+      if (!input.to) {
+        return { ok: false, simulated: false, provider: "resend", message: "Lead has no email." };
+      }
+      const sent = await sendResendEmail({ to: input.to, subject: input.subject, body: input.body });
+      return { ok: sent.ok, simulated: false, provider: "resend", message: sent.message };
+    },
+  };
+}
+
 const registry: Record<string, ChannelProvider> = {
-  email: simulated("email", "Email"),
+  email: emailChannel(),
   sms: simulated("sms", "SMS"),
   phone: simulated("phone", "Phone"),
   linkedin: simulated("linkedin", "LinkedIn"),

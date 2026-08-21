@@ -264,6 +264,63 @@ export function fallbackSummary(lead: LeadLike) {
   return `${name}${title ? `, ${title}` : ""}${company ? ` at ${company}` : ""} is available for multi-channel outreach. Profile completeness is ${lead.email ? "strong on email" : "limited on email"}.`;
 }
 
+export function fallbackSequence(input: { request: string; goal?: string; channels?: string[] }) {
+  const text = `${input.request} ${input.goal ?? ""}`.toLowerCase();
+  const channels = input.channels?.length
+    ? input.channels
+    : ["email", ...(text.includes("linkedin") ? ["linkedin"] : []), ...(text.includes("sms") ? ["sms"] : [])];
+  const steps = [];
+  let delay = 0;
+  for (const raw of channels) {
+    const channel = raw === "call" || raw === "phone" ? "call_task" : raw;
+    if (channel === "email") {
+      steps.push({
+        channel: "email" as const,
+        stepType: "action" as const,
+        delayHours: delay,
+        config: {
+          subject: "Quick note for {{company_name}}",
+          body: "Hi {{first_name}},\n\nI wanted to reach {{company_name}} about a short conversation.\n\n",
+        },
+      });
+    } else if (channel === "linkedin") {
+      steps.push({
+        channel: "linkedin" as const,
+        stepType: "action" as const,
+        delayHours: delay || 48,
+        config: { message: "Hi {{first_name}}, following up from my note to {{company_name}}." },
+      });
+    } else if (channel === "sms") {
+      steps.push({
+        channel: "sms" as const,
+        stepType: "action" as const,
+        delayHours: delay || 72,
+        config: { message: "Hi {{first_name}}, circling back on {{company_name}}." },
+      });
+    } else if (channel === "call_task") {
+      steps.push({
+        channel: "call_task" as const,
+        stepType: "action" as const,
+        delayHours: delay || 24,
+        config: { taskNotes: "Call {{first_name}} at {{company_name}}." },
+      });
+    }
+    delay = 48;
+  }
+  if (!steps.length) {
+    steps.push({
+      channel: "email" as const,
+      stepType: "action" as const,
+      delayHours: 0,
+      config: {
+        subject: "Intro for {{company_name}}",
+        body: "Hi {{first_name}},\n\n",
+      },
+    });
+  }
+  return { name: "Chat-drafted sequence", goal: input.goal, steps };
+}
+
 export function fallbackNextAction(lead: LeadLike) {
   if (lead.email) return { action: "send_email", reason: "Email is the strongest available channel." };
   if (lead.jobTitle) return { action: "send_linkedin", reason: "No email on file; LinkedIn is the next best path." };

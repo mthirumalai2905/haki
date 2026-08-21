@@ -60,11 +60,12 @@ Navigation:
 Haki AI
 Universal (Beta)
 Overview
-Hermes
 Leads
 Campaigns
 Sequences
 Analytics
+
+`/hermes` redirects to Sequences. Do not add Hermes back to the sidebar.
 
 Settings
 
@@ -538,10 +539,15 @@ Metrics:
 Tabs:
 
 Overview
+Sequence
 Workflow
 Leads
 Activity
 Analytics
+
+Sequence is the primary authoring surface: ordered step cards plus Ask Haki chat. Click a card to edit channel-specific content. Email steps can paste subject/body and optionally toggle a per-lead AI video (simulated). Launch asks Send now vs Schedule.
+
+Workflow (canvas) stays as a compiled fallback of the same spec.
 
 ---
 

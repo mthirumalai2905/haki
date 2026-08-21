@@ -5,7 +5,6 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   BarChart3,
-  Bot,
   ChevronUp,
   Globe,
   Layers3,
@@ -30,7 +29,6 @@ const items: Array<{
 }> = [
   { href: "/universal", label: "Universal", icon: Globe, beta: true },
   { href: "/overview", label: "Overview", icon: LayoutGrid },
-  { href: "/hermes", label: "Hermes", icon: Bot },
   { href: "/leads", label: "Leads", icon: Users },
   { href: "/campaigns", label: "Campaigns", icon: Layers3 },
   { href: "/sequences", label: "Sequences", icon: Workflow },

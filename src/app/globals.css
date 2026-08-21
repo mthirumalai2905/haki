@@ -101,6 +101,17 @@ html.landing-scroll {
   background-size: 16px 16px;
 }
 
+.haki-flow .react-flow__controls-button {
+  border-bottom-color: var(--line) !important;
+  background: transparent !important;
+  fill: #1d1d1f !important;
+}
+
+.haki-flow .react-flow__minimap-node {
+  fill: #007aff;
+  stroke: none;
+}
+
 .scrollbar-thin::-webkit-scrollbar {
   height: 9px;
   width: 9px;

@@ -10,6 +10,7 @@ import {
   useEdgesState,
   useNodesState,
   useReactFlow,
+  MarkerType,
   type Connection,
   type Edge,
   type Node,
@@ -103,7 +104,7 @@ function CanvasInner({
   );
 
   return (
-    <div className="flex h-full min-h-[560px] overflow-hidden rounded-[14px] border border-line bg-[#fbfbfd]">
+    <div className="flex h-full min-h-[560px] overflow-hidden rounded-[16px] border border-line bg-[linear-gradient(180deg,#f7f7fa_0%,#eef0f5_100%)] shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]">
       <div
         ref={wrapper}
         className="relative min-w-0 flex-1"
@@ -138,11 +139,26 @@ function CanvasInner({
           onNodeClick={(_, node) => setSelected(node.id)}
           nodeTypes={nodeTypes}
           fitView
-          className="dot-grid"
+          zoomOnScroll={false}
+          preventScrolling={false}
+          defaultEdgeOptions={{
+            type: "smoothstep",
+            style: { stroke: "#c7c7cc", strokeWidth: 1.6 },
+            markerEnd: { type: MarkerType.ArrowClosed, color: "#c7c7cc", width: 16, height: 16 },
+          }}
+          className="haki-flow"
         >
-          <Background />
-          <MiniMap />
-          <Controls />
+          <Background gap={22} size={1.2} color="#d2d2d7" />
+          <MiniMap
+            pannable
+            zoomable
+            className="!overflow-hidden !rounded-[12px] !border !border-line !bg-white/90 !shadow-[0_8px_20px_rgba(29,29,31,0.08)]"
+            maskColor="rgba(242,242,247,0.72)"
+          />
+          <Controls
+            showInteractive={false}
+            className="!overflow-hidden !rounded-[12px] !border !border-line !bg-white/90 !shadow-[0_8px_20px_rgba(29,29,31,0.08)]"
+          />
         </ReactFlow>
       </div>
       {selectedNode ? (

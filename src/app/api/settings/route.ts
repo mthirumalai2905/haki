@@ -1,5 +1,6 @@
 import { getWorkspace } from "@/lib/workspace";
 import { ai } from "@/lib/ai";
+import { checkResend } from "@/lib/email/resend";
 import { db } from "@/lib/db";
 import { jsonError, jsonOk } from "../_utils";
 
@@ -14,6 +15,7 @@ export async function GET() {
     return jsonOk({
       workspace,
       aiConfigured: ai.configured(),
+      email: await checkResend(),
       counts: { leads, campaigns, imports },
     });
   } catch (error) {

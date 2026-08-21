@@ -9,6 +9,9 @@ export type GraphOp =
       label?: string;
       description?: string;
       waitHours?: number;
+      condition?: WorkflowNodeData["condition"];
+      sendAfterHour?: number;
+      sendBeforeHour?: number;
       after?: string;
       before?: string;
       body?: string;
@@ -101,6 +104,14 @@ export function applyGraphOps(graph: WorkflowGraph, ops: GraphOp[]): GraphOpResu
       const after = resolveAnchor(workflow, op.after) ?? lastContinueNode(workflow);
       const id = insertAfter(workflow, after?.id, data);
       if (id) {
+        if (data.type === "condition") {
+          wireCondition(workflow, id);
+          if (data.condition === "is_weekday") {
+            for (const node of workflow.nodes) {
+              if (node.data.type === "action") node.data.weekdayOnly = true;
+            }
+          }
+        }
         changes.push(`Added ${data.label}${after ? ` after ${after.data.label}` : ""}`);
         changedNodeIds.push(id);
       }
@@ -143,8 +154,47 @@ export function applyGraphOps(graph: WorkflowGraph, ops: GraphOp[]): GraphOpResu
   };
 }
 
+export function parseTimeWindow(text: string) {
+  const matches = [...text.matchAll(/\b(\d{1,2})(?::(\d{2}))?\s*(a\.?m\.?|p\.?m\.?)?/gi)];
+  if (matches.length < 1) return null;
+  if (matches.length === 1 && !/\b(between|window|only send|before|after|a\.?m|p\.?m)\b/i.test(text)) {
+    return null;
+  }
+  const hours = matches.slice(0, 2).map((match, index, list) => {
+    let hour = Number(match[1]);
+    const meridiem = (match[3] || list[0][3] || "").toLowerCase();
+    if (meridiem.startsWith("p") && hour < 12) hour += 12;
+    if (meridiem.startsWith("a") && hour === 12) hour = 0;
+    return hour;
+  });
+  if (!hours.length) return null;
+  const after = hours[0];
+  const before = hours[1] ?? Math.min(23, after + 1);
+  if (after === before) return null;
+  return { after, before };
+}
+
 export function parseGraphOps(message: string): GraphOp[] {
   const ops: GraphOp[] = [];
+  if (/\b(weekend|weekday)\b/i.test(message) && /\b(check|cannot send|can't send|cant send|do not send|don't send|only send)\b/i.test(message)) {
+    ops.push({
+      kind: "add",
+      nodeType: "condition",
+      condition: "is_weekday",
+      label: "Weekday check",
+    });
+  }
+  const window = parseTimeWindow(message);
+  if (window) {
+    ops.push({
+      kind: "add",
+      nodeType: "condition",
+      condition: "in_send_window",
+      label: `Time window ${window.after}:00-${window.before}:00`,
+      sendAfterHour: window.after,
+      sendBeforeHour: window.before,
+    });
+  }
   const chunks = message.split(/\band then\b|\bthen\b|\band\b|;/i);
 
   for (const raw of chunks) {
@@ -171,8 +221,30 @@ export function parseGraphOps(message: string): GraphOp[] {
       const hours = parseHours(text);
       const after = text.match(/\bafter(?:\s+the)?\s+([a-z0-9 ]+?)(?:\.|$)/i)?.[1]?.trim();
       const before = text.match(/\bbefore(?:\s+the)?\s+([a-z0-9 ]+?)(?:\.|$)/i)?.[1]?.trim();
+      if (/\b(weekend|weekday|business day|working day)\b/i.test(text) && /\b(check|condition|node)\b/i.test(text)) {
+        ops.push({
+          kind: "add",
+          nodeType: "condition",
+          condition: "is_weekday",
+          label: "Weekday check",
+          after,
+          before,
+        });
+        continue;
+      }
       if (/\bwait\b/i.test(text) && !channel) {
         ops.push({ kind: "add", nodeType: "wait", waitHours: hours ?? 24, after, before });
+        continue;
+      }
+      if (/\b(check|condition)\b/i.test(text) && !channel) {
+        ops.push({
+          kind: "add",
+          nodeType: "condition",
+          condition: "is_weekday",
+          label: "Weekday check",
+          after,
+          before,
+        });
         continue;
       }
       if (channel || /\bnode\b/i.test(text)) {
@@ -214,7 +286,7 @@ export function parseGraphOps(message: string): GraphOp[] {
   }
 
   return ops.filter((op) => {
-    if (op.kind === "add") return Boolean(op.channel || op.nodeType === "wait");
+    if (op.kind === "add") return Boolean(op.channel || op.nodeType === "wait" || op.nodeType === "condition");
     if (op.kind === "remove") return Boolean(op.nodeId || op.step || op.channel || op.label || op.type);
     return Object.keys(op.patch).length > 0;
   });
@@ -230,7 +302,19 @@ function nodeDataFromAdd(op: Extract<GraphOp, { kind: "add" }>): WorkflowNodeDat
     };
   }
   if (op.nodeType === "condition") {
-    return { type: "condition", label: op.label || "Has replied?", condition: "any_engagement" };
+    return {
+      type: "condition",
+      label:
+        op.label ||
+        (op.condition === "is_weekday"
+          ? "Weekday check"
+          : op.condition === "in_send_window"
+            ? "Time window"
+            : "Has replied?"),
+      condition: op.condition || "any_engagement",
+      sendAfterHour: op.sendAfterHour,
+      sendBeforeHour: op.sendBeforeHour,
+    };
   }
   const defaults = op.channel ? CHANNEL_DEFAULTS[op.channel] : undefined;
   return {
@@ -279,6 +363,38 @@ function resolveAnchor(graph: WorkflowGraph, value?: string) {
     graph.nodes.find((node) => node.data.label.toLowerCase().includes(trimmed.toLowerCase())) ??
     graph.nodes.find((node) => node.id === trimmed)
   );
+}
+
+function wireCondition(graph: WorkflowGraph, conditionId: string) {
+  const forward = graph.edges.find((edge) => edge.source === conditionId && !edge.sourceHandle);
+  if (forward) {
+    forward.sourceHandle = "yes";
+    forward.label = "yes";
+    forward.id = `${conditionId}-${forward.target}-yes`;
+  }
+  const waitId = nextId(graph);
+  const source = graph.nodes.find((node) => node.id === conditionId);
+  graph.nodes.push({
+    id: waitId,
+    type: "haki",
+    position: {
+      x: (source?.position.x ?? 80) + 80,
+      y: (source?.position.y ?? 160) + 140,
+    },
+    data: { type: "wait", label: "Wait for weekday", waitHours: 24 },
+  });
+  graph.edges.push({
+    id: `${conditionId}-${waitId}-no`,
+    source: conditionId,
+    target: waitId,
+    sourceHandle: "no",
+    label: "no",
+  });
+  graph.edges.push({
+    id: `${waitId}-${conditionId}`,
+    source: waitId,
+    target: conditionId,
+  });
 }
 
 function lastContinueNode(graph: WorkflowGraph) {

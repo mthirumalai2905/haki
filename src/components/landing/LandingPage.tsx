@@ -1,8 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
-import { motion } from "motion/react";
-import { cn } from "@/lib/utils";
+import { motion, AnimatePresence } from "motion/react";
 import { scrollToId, useLandingSmoothScroll } from "./smooth-scroll";
 
 const ROWS = [
@@ -14,28 +14,36 @@ const ROWS = [
 ];
 
 const STEPS = [
-  { n: "01", title: "Upload", body: "Bring a CSV or XLSX you already have. Haki does not scrape leads.", accent: "bg-[#3b82f6]" },
-  { n: "02", title: "Preview", body: "See the first 100 rows. Map fields. Confirm what gets imported.", accent: "bg-[#f97316]" },
-  { n: "03", title: "Ask Haki", body: "Say who to reach and what you want. Hermes drafts the workflow.", accent: "bg-[#af52de]" },
-  { n: "04", title: "Review", body: "Nothing sends until you approve. Simulation first, providers later.", accent: "bg-[#34c759]" },
+  { n: "01", title: "Upload", body: "Bring a CSV or XLSX you already have. Haki does not scrape leads." },
+  { n: "02", title: "Preview", body: "See the first 100 rows. Map fields. Confirm what gets imported." },
+  { n: "03", title: "Ask Haki", body: "Say who to reach and what you want. Haki drafts the workflow." },
+  { n: "04", title: "Review", body: "Nothing sends until you approve. Simulation first. Providers later." },
 ];
 
 const FLOW = ["Data", "Leads", "AI", "Goal", "Workflow", "Outreach", "Conversations", "Outcomes"];
 
 const CHANNELS = [
-  { name: "Email", note: "First touch and follow-up", swatch: "bg-[#007aff]" },
-  { name: "LinkedIn", note: "Connect, then message", swatch: "bg-[#0A66C2]" },
-  { name: "WhatsApp", note: "Short personalized close", swatch: "bg-[#25D366]" },
-  { name: "X", note: "Public context before you write", swatch: "bg-[#1d1d1f]" },
-  { name: "YouTube", note: "Simulated sapien / intel", swatch: "bg-[#ff375f]" },
-  { name: "SMS", note: "When email stays quiet", swatch: "bg-[#5856d6]" },
-  { name: "Phone", note: "Booked when the path asks", swatch: "bg-[#ff9f0a]" },
+  { name: "Email", note: "First touch and follow-up" },
+  { name: "LinkedIn", note: "Connect, then message" },
+  { name: "WhatsApp", note: "Short personalized close" },
+  { name: "X", note: "Public context before you write" },
+  { name: "SMS", note: "When email stays quiet" },
+  { name: "Phone", note: "Booked when the path asks" },
 ];
 
 const PAINS = [
-  { title: "Email in one tab", body: "The first touch goes out. The follow-up lives in a calendar reminder you ignore by Thursday.", tint: "bg-[#e8f1ff]" },
-  { title: "LinkedIn in another", body: "Someone was supposed to connect after 24 hours. Nobody owns that step, so it does not happen.", tint: "bg-[#e8f8ff]" },
-  { title: "WhatsApp as an afterthought", body: "The close sits in a notes app. The lead already went cold.", tint: "bg-[#e9f9ee]" },
+  {
+    title: "Email in one tab",
+    body: "The first touch goes out. The follow-up lives in a calendar reminder you ignore by Thursday.",
+  },
+  {
+    title: "LinkedIn in another",
+    body: "Someone was supposed to connect after 24 hours. Nobody owns that step, so it does not happen.",
+  },
+  {
+    title: "WhatsApp as an afterthought",
+    body: "The close sits in a notes app. The lead already went cold.",
+  },
 ];
 
 const FEATURES = [
@@ -43,25 +51,25 @@ const FEATURES = [
     kicker: "Ingest",
     title: "Import the file. Keep the truth in the row.",
     body: "CSV or XLSX first. Haki detects columns, guesses the map, and shows the first 100 rows. Missing emails stay missing. Unknown fields stay on the lead. You correct the map before anything is stored.",
-    points: ["Preview, do not dump 10,000 rows on the screen", "Company and contact stay separate", "Custom fields are not discarded"],
+    points: ["Preview. Do not dump 10,000 rows on the screen.", "Company and contact stay separate.", "Custom fields are not discarded."],
   },
   {
     kicker: "Qualify",
     title: "Score the list against who you actually want.",
     body: "Write the ICP the way you already think about it: industry, size, country, title. Each lead comes back with a score, a status, and a reason you can read. You pick who enters the campaign.",
-    points: ["Structured result, not a vibe", "Qualified, maybe, or leave them out", "You still decide the audience"],
+    points: ["Structured result, not a vibe.", "Qualified, maybe, or leave them out.", "You still decide the audience."],
   },
   {
     kicker: "Workflow",
     title: "One path. Several channels. A stop when they answer.",
     body: "This is not an email sequence with extras taped on. Trigger, action, wait, condition, next action. If they reply, the campaign stops. If they do not, the next channel can fire. You edit the graph before it is live.",
-    points: ["Email, LinkedIn, WhatsApp, SMS, phone, X", "Waits and branches you can see", "AI can draft. It cannot launch."],
+    points: ["Email, LinkedIn, WhatsApp, SMS, phone, X.", "Waits and branches you can see.", "AI can draft. It cannot launch."],
   },
   {
     kicker: "Review",
     title: "Read the messages. Then let it run without the laptop open.",
     body: "Personalize with first name, company, title, and your own fields. Generate or rewrite if you want. Simulation labels every send until a provider is connected. After launch, each lead keeps a step, a status, and a next time.",
-    points: ["Nothing pretends to be a real send", "The campaign is resumable", "Journey and analytics stay readable"],
+    points: ["Nothing pretends to be a real send.", "The campaign is resumable.", "Journey and analytics stay readable."],
   },
 ];
 
@@ -69,17 +77,14 @@ const AUDIENCE = [
   {
     title: "Operators with a list already",
     body: "You bought the file, exported the CRM, or pulled it from Hermes. You need a campaign, not another database.",
-    head: "bg-[#d6e8ff]",
   },
   {
     title: "Agencies running client outreach",
     body: "One workspace per list. Preview, map, review, then show the client the path before a single touch goes out.",
-    head: "bg-[#ffe8a3]",
   },
   {
     title: "Founders who want meetings",
     body: "Say the goal in a sentence. Edit the draft. Watch replies and booked calls without living in five tools.",
-    head: "bg-[#ffd4dc]",
   },
 ];
 
@@ -97,7 +102,7 @@ const FAQS = [
   },
   {
     q: "Will it send messages the moment I ask?",
-    a: "No. Hermes can draft a workflow and messages. You review them. Until a provider is connected, actions run in simulation and are labeled as such.",
+    a: "No. Haki can draft a workflow and messages. You review them. Until a provider is connected, actions run in simulation and are labeled as such.",
   },
   {
     q: "What files can I upload?",
@@ -109,11 +114,11 @@ const FAQS = [
   },
   {
     q: "What happens if I close the browser?",
-    a: "Execution is meant to continue without the tab open. Each enrolled lead keeps its current step, status, and next run time so the campaign can resume.",
+    a: "Execution is meant to continue without the tab open. Each enrolled lead keeps its current step, status, and next run time so the campaign can resume. Today the scheduler lives with the Next server. If that process is down, nothing ticks.",
   },
 ];
 
-const NAV = ["Haki AI", "Universal", "Overview", "Hermes", "Leads", "Campaigns", "Sequences", "Analytics"];
+const NAV = ["Haki AI", "Universal", "Overview", "Leads", "Campaigns", "Sequences", "Analytics"];
 
 const TESTIMONIALS = [
   {
@@ -169,7 +174,7 @@ const TESTIMONIALS = [
   {
     name: "Yara Mensah",
     handle: "yaramensah",
-    text: "Conditions are the quiet hero. Opened? Replied? No response? The path branches. We stopped writing “if they don’t reply, ping them on LinkedIn” in a Notion doc.",
+    text: "Conditions are the quiet hero. Opened? Replied? No response? The path branches. We stopped writing follow-up rules in a Notion doc.",
   },
   {
     name: "Chris Adel",
@@ -216,17 +221,17 @@ export function LandingPage() {
   useLandingSmoothScroll();
 
   return (
-    <div className="bg-[#f4f4f2] text-ink">
+    <div className="bg-[#f7f7f4] text-ink">
       <div className="p-3">
         <div
-          className="relative min-h-[92vh] overflow-hidden rounded-[28px] bg-cover bg-top"
+          className="relative min-h-[92vh] overflow-hidden rounded-[20px] bg-cover bg-top"
           style={{ backgroundImage: "url(/haki-landscape.png)" }}
         >
-          <div className="absolute inset-0 bg-gradient-to-b from-sky-100/25 via-transparent to-black/30" />
+          <div className="absolute inset-0 bg-gradient-to-b from-white/35 via-transparent to-black/35" />
 
-          <header className="relative z-10 flex justify-center px-6 pt-5">
-            <nav className="flex items-center gap-5 rounded-full border border-white/40 bg-white/70 px-3 py-1.5 shadow-[0_8px_30px_rgba(0,0,0,0.08)] backdrop-blur-xl">
-              <Link href="/" className="flex items-center gap-2 pl-1 pr-2">
+          <header className="relative z-10 flex justify-center px-5 pt-5">
+            <nav className="flex items-center gap-6 rounded-full border border-black/10 bg-white/80 px-4 py-1.5 backdrop-blur-xl">
+              <Link href="/" className="flex items-center gap-2 pr-1">
                 <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#1d1d1f] text-[11px] text-white">
                   H
                 </span>
@@ -235,16 +240,16 @@ export function LandingPage() {
                   <span className="block text-[9px] font-normal tracking-[0.04em] text-muted">An MK Labs Product</span>
                 </span>
               </Link>
-              <button type="button" onClick={() => scrollToId("how")} className="text-[13px] text-muted hover:text-ink">
+              <button type="button" onClick={() => scrollToId("how")} className="hidden text-[13px] text-muted hover:text-ink sm:inline">
                 How it works
               </button>
-              <button type="button" onClick={() => scrollToId("product")} className="text-[13px] text-muted hover:text-ink">
+              <button type="button" onClick={() => scrollToId("product")} className="hidden text-[13px] text-muted hover:text-ink sm:inline">
                 Product
               </button>
-              <button type="button" onClick={() => scrollToId("stories")} className="text-[13px] text-muted hover:text-ink">
+              <button type="button" onClick={() => scrollToId("stories")} className="hidden text-[13px] text-muted hover:text-ink md:inline">
                 Stories
               </button>
-              <button type="button" onClick={() => scrollToId("faq")} className="text-[13px] text-muted hover:text-ink">
+              <button type="button" onClick={() => scrollToId("faq")} className="hidden text-[13px] text-muted hover:text-ink md:inline">
                 FAQ
               </button>
               <Link
@@ -256,7 +261,7 @@ export function LandingPage() {
             </nav>
           </header>
 
-          <section className="relative z-10 mx-auto max-w-3xl px-6 pb-10 pt-24 text-center sm:pt-32">
+          <section className="relative z-10 mx-auto max-w-3xl px-6 pb-8 pt-24 text-center sm:pt-28">
             <motion.p
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
@@ -283,28 +288,49 @@ export function LandingPage() {
               Stop blasting a spreadsheet. Describe the goal. Haki drafts the workflow and waits for your review.
             </motion.p>
             <motion.div
-              initial={{ opacity: 0, y: 14 }}
+              initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, ease, delay: 0.24 }}
+              transition={{ duration: 0.55, ease, delay: 0.22 }}
+              className="mt-8 flex items-center justify-center gap-3"
             >
               <Link
                 href="/haki"
-                className="mt-7 inline-flex rounded-full bg-[#1d1d1f] px-5 py-2.5 text-[14px] font-medium text-white hover:bg-black"
+                className="inline-flex rounded-full bg-[#1d1d1f] px-5 py-2.5 text-[14px] font-medium text-white hover:bg-black"
               >
                 Open Haki AI
               </Link>
+              <button
+                type="button"
+                onClick={() => scrollToId("how")}
+                className="inline-flex rounded-full border border-black/15 bg-white/70 px-5 py-2.5 text-[14px] font-medium text-ink backdrop-blur hover:bg-white"
+              >
+                See the path
+              </button>
+            </motion.div>
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.55, ease, delay: 0.3 }}
+              className="mx-auto mt-8 max-w-md"
+            >
+              <p className="font-serif text-[22px] italic tracking-[-0.02em] text-[#1d1d1f] sm:text-[26px]">
+                Peace of mind before anything sends
+              </p>
+              <p className="mt-2 text-[14px] leading-6 text-[#1d1d1f]/60">
+                You review the workflow first. Haki stays in simulation until a provider is connected.
+              </p>
             </motion.div>
           </section>
 
           <motion.div
-            initial={{ opacity: 0, y: 40 }}
+            initial={{ opacity: 0, y: 36 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.9, ease, delay: 0.28 }}
-            className="relative z-10 px-3 pt-10 sm:px-8 sm:pt-16"
+            transition={{ duration: 0.85, ease, delay: 0.26 }}
+            className="relative z-10 px-3 pt-8 sm:px-10 sm:pt-12"
           >
             <Link
               href="/haki"
-              className="block overflow-hidden rounded-t-[16px] border border-white/70 bg-white shadow-[0_-18px_70px_rgba(0,0,0,0.2)]"
+              className="block overflow-hidden rounded-t-[14px] border border-white/80 bg-white shadow-[0_-12px_60px_rgba(0,0,0,0.22)]"
             >
               <HakiAppPreview />
             </Link>
@@ -312,226 +338,144 @@ export function LandingPage() {
         </div>
       </div>
 
-      <section className="relative overflow-hidden bg-gradient-to-b from-sky-50 to-[#f4f4f2] py-20">
-        <div className="mx-auto max-w-4xl px-6 text-center">
-          <p className="text-[15px] leading-6 text-muted">
-            Haki does not care where the file came from. Upload what you already have.
-          </p>
-          <div className="mt-10 flex flex-wrap items-end justify-center gap-5">
-            <FileWidget name="leads.csv" meta="Comma file" tone="bg-[#3b82f6]" tilt="-rotate-3" />
-            <FileWidget name="owners.xlsx" meta="Spreadsheet" tone="bg-[#f97316]" tilt="rotate-2" />
-            <FileWidget name="export.json" meta="Structured" tone="bg-[#ef4444]" tilt="-rotate-1" />
-          </div>
+      <section className="border-y border-line bg-white">
+        <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 px-6 py-5 text-[13px] text-muted">
+          <p>Bring a file you already sit in. Not a database of strangers.</p>
+          <p className="font-mono text-[12px] tracking-[-0.02em] text-ink">CSV · XLSX · JSON</p>
         </div>
       </section>
 
-      <Reveal id="how" className="mx-auto w-full max-w-[1600px] px-4 py-28 sm:px-6">
-        <p className="text-center text-[13px] text-muted">How Haki works</p>
-        <h2 className="mt-3 text-center text-[36px] font-semibold tracking-[-0.03em] sm:text-[44px]">
+      <Reveal id="how" className="mx-auto max-w-6xl px-6 py-28">
+        <p className="text-[12px] tracking-[0.16em] text-faint uppercase">How it works</p>
+        <h2 className="mt-3 max-w-2xl text-[36px] font-semibold tracking-[-0.035em] sm:text-[44px]">
           From the file to the first reply
         </h2>
-        <p className="mx-auto mt-4 max-w-2xl text-center text-[16px] leading-7 text-muted">
-          You already did the hard part: you have the list. Haki takes the rest. It qualifies, sequences, and runs a
-          multi-touch campaign so the work leads to the conversations you actually want.
+        <p className="mt-4 max-w-xl text-[16px] leading-7 text-muted">
+          You already did the hard part. You have the list. Haki qualifies, sequences, and runs the next touch so the work leads to conversations.
         </p>
 
-        <div className="relative mx-auto mt-12 w-full max-w-none">
-          <div className="pointer-events-none absolute -inset-6 rounded-[40px] bg-gradient-to-b from-white/80 to-transparent blur-2xl" />
-          <div className="relative overflow-hidden rounded-[24px] border border-white/80 bg-[#111] shadow-[0_28px_80px_rgba(0,0,0,0.18)]">
-            <div className="flex items-center gap-2 border-b border-white/10 bg-[#1c1c1e] px-4 py-2.5">
-              <span className="h-2.5 w-2.5 rounded-full bg-[#ff5f57]" />
-              <span className="h-2.5 w-2.5 rounded-full bg-[#febc2e]" />
-              <span className="h-2.5 w-2.5 rounded-full bg-[#28c840]" />
-              <span className="ml-2 text-[11px] text-white/50">Haki · campaign walkthrough</span>
-            </div>
-            <video
-              className="block h-auto w-full bg-black object-contain"
-              autoPlay
-              muted
-              loop
-              playsInline
-              preload="metadata"
-              aria-label="Haki product walkthrough"
-            >
-              <source src="/haki-walkthrough.webm" type="video/webm" />
-            </video>
+        <div className="mt-14 overflow-hidden rounded-[16px] border border-line bg-[#111]">
+          <div className="flex items-center gap-2 border-b border-white/10 px-4 py-2.5">
+            <span className="text-[11px] text-white/45">Haki · campaign walkthrough</span>
           </div>
+          <video
+            className="block h-auto w-full bg-black object-contain"
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="metadata"
+            aria-label="Haki product walkthrough"
+          >
+            <source src="/haki-walkthrough.webm" type="video/webm" />
+          </video>
         </div>
 
-        <div className="relative mx-auto mt-20 max-w-3xl">
-          <div className="absolute bottom-4 left-[19px] top-4 w-px bg-gradient-to-b from-[#007aff] via-[#af52de] to-[#34c759]" />
-          {STEPS.map((step, index) => (
-            <Reveal key={step.n} delay={index * 0.08} className="relative flex gap-6 pb-12 last:pb-0">
-              <span
-                className={`relative z-10 mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-[12px] font-semibold text-white shadow-[0_8px_20px_rgba(0,0,0,0.12)] ${step.accent}`}
-              >
-                {step.n}
-              </span>
-              <div className="min-w-0 flex-1">
-                <div className="font-serif text-[28px] italic tracking-[-0.03em]">{step.title}</div>
-                <p className="mt-2 max-w-xl text-[15px] leading-7 text-muted">{step.body}</p>
-                {index === 0 ? (
-                  <div className="mt-4 flex gap-2">
-                    <span className="rounded-full bg-[#3b82f6] px-2.5 py-1 text-[11px] text-white">CSV</span>
-                    <span className="rounded-full bg-[#f97316] px-2.5 py-1 text-[11px] text-white">XLSX</span>
-                    <span className="rounded-full bg-[#ef4444] px-2.5 py-1 text-[11px] text-white">JSON</span>
-                  </div>
-                ) : null}
-              </div>
-            </Reveal>
+        <ol className="mt-16 grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
+          {STEPS.map((step) => (
+            <li key={step.n}>
+              <div className="font-mono text-[12px] text-faint">{step.n}</div>
+              <div className="mt-3 font-serif text-[28px] italic tracking-[-0.03em]">{step.title}</div>
+              <p className="mt-2 text-[14px] leading-6 text-muted">{step.body}</p>
+            </li>
           ))}
-        </div>
+        </ol>
       </Reveal>
 
-      <section className="relative overflow-hidden py-24">
-        <div className="absolute inset-0 bg-[radial-gradient(900px_420px_at_20%_0%,rgba(0,122,255,0.12),transparent_55%),radial-gradient(700px_380px_at_90%_80%,rgba(255,159,10,0.12),transparent_50%)]" />
-        <div className="relative mx-auto max-w-6xl px-6">
-          <div className="grid items-center gap-12 lg:grid-cols-[1fr_1.1fr]">
-            <div>
-              <p className="text-[13px] text-muted">The usual week</p>
-              <h2 className="mt-2 text-[32px] font-semibold tracking-[-0.03em] sm:text-[40px]">
-                The list is ready. The follow-up is not.
-              </h2>
-              <p className="mt-4 max-w-md text-[15px] leading-7 text-muted">
-                Most teams do not fail at finding a file. They fail at keeping the next touch honest across tools.
-              </p>
-            </div>
-            <div className="relative mx-auto h-[340px] w-full max-w-md">
-              {PAINS.map((pain, index) => (
-                <div
-                  key={pain.title}
-                  className={`absolute left-0 right-0 rounded-[22px] p-5 shadow-[0_22px_50px_rgba(15,23,42,0.12)] ${pain.tint} ${
-                    index === 0 ? "top-0 rotate-[-4deg]" : index === 1 ? "top-[92px] rotate-[3deg]" : "top-[184px] rotate-[-2deg]"
-                  }`}
-                >
-                  <div className="mb-2 flex gap-1.5">
-                    <span className="h-2 w-2 rounded-full bg-[#ff5f57]" />
-                    <span className="h-2 w-2 rounded-full bg-[#febc2e]" />
-                    <span className="h-2 w-2 rounded-full bg-[#28c840]" />
-                  </div>
-                  <div className="text-[16px] font-medium">{pain.title}</div>
-                  <p className="mt-2 text-[13px] leading-6 text-muted">{pain.body}</p>
-                </div>
-              ))}
-            </div>
+      <section className="border-y border-line bg-white py-24">
+        <div className="mx-auto grid max-w-6xl gap-16 px-6 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
+          <div>
+            <p className="text-[12px] tracking-[0.16em] text-faint uppercase">The usual week</p>
+            <h2 className="mt-3 text-[32px] font-semibold tracking-[-0.035em] sm:text-[40px]">
+              The list is ready. The follow-up is not.
+            </h2>
+            <p className="mt-4 max-w-sm text-[15px] leading-7 text-muted">
+              Most teams do not fail at finding a file. They fail at keeping the next touch honest across tools.
+            </p>
           </div>
+          <ProblemList />
         </div>
       </section>
 
-      <Reveal id="product" className="mx-auto max-w-5xl px-6 py-28">
-        <div className="rounded-[32px] bg-gradient-to-br from-white via-[#f7fbff] to-[#fff6ea] px-6 py-14 sm:px-10">
-        <p className="text-[13px] text-muted">Product</p>
-        <h2 className="mt-2 max-w-2xl text-[32px] font-semibold tracking-[-0.03em] sm:text-[36px]">
-          Built like an outreach desk, not a newsletter tool
-        </h2>
-        <div className="mt-16 space-y-20">
-          {FEATURES.map((feature, index) => (
-            <div
-              key={feature.kicker}
-              className={`grid items-center gap-10 lg:grid-cols-2 ${index % 2 === 1 ? "lg:[&>*:first-child]:order-2" : ""}`}
-            >
-              <div>
-                <div className="text-[12px] uppercase tracking-[0.14em] text-faint">{feature.kicker}</div>
-                <h3 className="mt-2 text-[26px] font-semibold tracking-[-0.03em]">{feature.title}</h3>
-                <p className="mt-3 text-[15px] leading-7 text-muted">{feature.body}</p>
-                <ul className="mt-5 space-y-2">
-                  {feature.points.map((point) => (
-                    <li key={point} className="flex gap-2 text-[14px] leading-6 text-ink">
-                      <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#1d1d1f]" />
-                      {point}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              <FeaturePanel index={index} />
-            </div>
-          ))}
-        </div>
-        </div>
-      </Reveal>
-
-      <Reveal className="mx-auto max-w-5xl px-6 pb-24">
-        <h2 className="text-[32px] font-semibold tracking-[-0.03em]">Who this is for</h2>
-        <p className="mt-3 max-w-xl text-[15px] leading-7 text-muted">
-          If you still need a database of strangers, you are earlier than Haki. If you already have names and a goal,
-          this is the desk.
-        </p>
-        <div className="mt-10 grid gap-5 sm:grid-cols-3">
-          {AUDIENCE.map((item) => (
-            <FloatCard key={item.title}>
-              <div className={`px-5 py-4 ${item.head}`}>
-                <div className="text-[16px] font-medium">{item.title}</div>
-              </div>
-              <p className="px-5 py-4 text-[13px] leading-6 text-muted">{item.body}</p>
-            </FloatCard>
-          ))}
-        </div>
-      </Reveal>
-
-      <Reveal className="mx-auto max-w-5xl px-6 pb-24">
-        <h2 className="text-[32px] font-semibold tracking-[-0.03em]">What you put down</h2>
-        <div className="mt-8 grid gap-5 md:grid-cols-2">
-          <FloatCard className="-rotate-1">
-            <div className="bg-[#1d1d1f] px-5 py-3 text-[12px] font-medium uppercase tracking-[0.1em] text-white/70">
-              The pile of tools
-            </div>
-            <ul className="divide-y divide-line">
-              {COMPARE.map((row) => (
-                <li key={row.old} className="px-5 py-3.5 text-[14px] leading-6 text-muted">
-                  {row.old}
-                </li>
-              ))}
-            </ul>
-          </FloatCard>
-          <FloatCard className="rotate-1" accent="bg-[#007aff]">
-            <div className="bg-[#e8f1ff] px-5 py-3 text-[12px] font-medium uppercase tracking-[0.1em] text-accent">
-              On Haki
-            </div>
-            <ul className="divide-y divide-line">
-              {COMPARE.map((row) => (
-                <li key={row.next} className="px-5 py-3.5 text-[14px] leading-6">
-                  {row.next}
-                </li>
-              ))}
-            </ul>
-          </FloatCard>
-        </div>
-      </Reveal>
-
-      <section className="relative mb-28 overflow-hidden bg-[#111] py-20 text-white">
-        <div className="absolute inset-0 opacity-40 [background:radial-gradient(circle_at_20%_20%,#007aff55,transparent_40%),radial-gradient(circle_at_80%_70%,#af52de44,transparent_35%)]" />
+      <section id="product" className="relative overflow-hidden py-28">
+        <div className="pointer-events-none absolute inset-0 bg-[#ebe6da]" />
+        <div className="pointer-events-none absolute inset-0 opacity-[0.35] [background-image:radial-gradient(rgba(29,29,31,0.08)_0.8px,transparent_0.8px)] [background-size:18px_18px]" />
         <div className="relative mx-auto max-w-6xl px-6">
-          <h2 className="max-w-xl font-serif text-[40px] italic tracking-[-0.03em] sm:text-[48px]">
+          <p className="text-[12px] tracking-[0.16em] text-[#7a7468] uppercase">Product</p>
+          <h2 className="mt-3 max-w-2xl text-[32px] font-semibold tracking-[-0.035em] text-[#1d1d1f] sm:text-[40px]">
+            Built like an outreach desk, not a newsletter tool
+          </h2>
+          <p className="mt-4 max-w-xl text-[15px] leading-7 text-[#5c574e]">
+            Four objects on one desk. Click a step. The rest stay in the pile, the way a real operator works.
+          </p>
+          <ProductDesk />
+        </div>
+      </section>
+
+      <section className="bg-[#111] py-24 text-white">
+        <div className="mx-auto max-w-6xl px-6">
+          <h2 className="max-w-xl text-[36px] font-semibold tracking-[-0.035em] sm:text-[44px]">
             One path. Every channel. A stop when they answer.
           </h2>
-          <p className="mt-4 max-w-lg text-[15px] leading-7 text-white/65">
+          <p className="mt-4 max-w-lg text-[15px] leading-7 text-white/55">
             Email is one channel. Haki is the desk that keeps the next touch in the same campaign.
           </p>
-          <div className="mt-10 flex gap-3 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <div className="mt-10 flex flex-wrap gap-x-6 gap-y-2 border-t border-white/10 pt-8 font-mono text-[12px] text-white/50">
             {FLOW.map((item) => (
-              <span
-                key={item}
-                className="shrink-0 rounded-full border border-white/15 bg-white/10 px-5 py-2.5 text-[14px] font-medium backdrop-blur"
-              >
-                {item}
-              </span>
+              <span key={item}>{item}</span>
             ))}
           </div>
-          <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="mt-10 grid gap-px overflow-hidden rounded-[12px] bg-white/10 sm:grid-cols-2 lg:grid-cols-3">
             {CHANNELS.map((channel) => (
-              <div key={channel.name} className="rounded-[20px] bg-white/10 px-4 py-4 ring-1 ring-white/10">
-                <div className="flex items-center gap-2">
-                  <span className={`h-2 w-2 rounded-full ${channel.swatch}`} />
-                  <div className="text-[15px] font-medium">{channel.name}</div>
-                </div>
-                <p className="mt-2 text-[13px] leading-5 text-white/55">{channel.note}</p>
+              <div key={channel.name} className="bg-[#111] px-5 py-5">
+                <div className="text-[15px] font-medium">{channel.name}</div>
+                <p className="mt-1 text-[13px] text-white/50">{channel.note}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      <Reveal id="stories" className="mx-auto max-w-7xl px-6 pb-28">
+      <Reveal className="mx-auto max-w-6xl px-6 py-28">
+        <h2 className="text-[32px] font-semibold tracking-[-0.035em]">Who this is for</h2>
+        <p className="mt-3 max-w-xl text-[15px] leading-7 text-muted">
+          If you still need a database of strangers, you are earlier than Haki. If you already have names and a goal, this is the desk.
+        </p>
+        <div className="mt-12 grid gap-10 sm:grid-cols-3">
+          {AUDIENCE.map((item) => (
+            <div key={item.title}>
+              <div className="text-[16px] font-semibold tracking-[-0.02em]">{item.title}</div>
+              <p className="mt-3 text-[14px] leading-6 text-muted">{item.body}</p>
+            </div>
+          ))}
+        </div>
+      </Reveal>
+
+      <section className="border-y border-line bg-white py-24">
+        <div className="mx-auto max-w-6xl px-6">
+          <h2 className="text-[32px] font-semibold tracking-[-0.035em]">What you put down</h2>
+          <div className="mt-10 overflow-hidden rounded-[12px] border border-line">
+            <table className="w-full text-left text-[14px]">
+              <thead className="bg-[#f7f7f4] text-[12px] tracking-[0.08em] text-faint uppercase">
+                <tr>
+                  <th className="px-5 py-3 font-medium">The pile of tools</th>
+                  <th className="px-5 py-3 font-medium">On Haki</th>
+                </tr>
+              </thead>
+              <tbody>
+                {COMPARE.map((row) => (
+                  <tr key={row.old} className="border-t border-line">
+                    <td className="px-5 py-4 text-muted">{row.old}</td>
+                    <td className="px-5 py-4">{row.next}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <Reveal id="stories" className="mx-auto max-w-7xl px-6 py-28">
         <h2 className="text-center text-[36px] font-semibold tracking-[-0.03em]">Loved by operators who run the path</h2>
         <p className="mx-auto mt-3 max-w-xl text-center text-[15px] leading-7 text-muted">
           What teams say after they stop blasting a CSV and start reviewing multi-touch campaigns.
@@ -568,15 +512,15 @@ export function LandingPage() {
       </Reveal>
 
       <Reveal id="faq" className="mx-auto max-w-3xl px-6 pb-16">
-        <h2 className="text-[32px] font-semibold tracking-[-0.03em]">Questions people ask first</h2>
-        <div className="mt-8 divide-y divide-line overflow-hidden rounded-[24px] bg-white shadow-[0_18px_50px_rgba(15,23,42,0.08)] ring-1 ring-black/[0.04]">
+        <h2 className="text-[32px] font-semibold tracking-[-0.035em]">Questions people ask first</h2>
+        <div className="mt-8 divide-y divide-line border-y border-line">
           {FAQS.map((item) => (
-            <details key={item.q} className="group px-5 py-4">
+            <details key={item.q} className="group py-5">
               <summary className="cursor-pointer list-none text-[15px] font-medium tracking-[-0.02em] [&::-webkit-details-marker]:hidden">
                 <span className="flex items-center justify-between gap-4">
                   {item.q}
-                  <span className="text-[18px] text-faint group-open:hidden">+</span>
-                  <span className="hidden text-[18px] text-faint group-open:inline">−</span>
+                  <span className="font-mono text-[12px] text-faint group-open:hidden">+</span>
+                  <span className="hidden font-mono text-[12px] text-faint group-open:inline">−</span>
                 </span>
               </summary>
               <p className="mt-3 max-w-2xl text-[14px] leading-7 text-muted">{item.a}</p>
@@ -588,8 +532,7 @@ export function LandingPage() {
       <Reveal id="about" className="mx-auto max-w-2xl px-6 py-24 text-center">
         <h2 className="font-serif text-[40px] italic tracking-[-0.03em]">Peace of mind before anything sends</h2>
         <p className="mt-5 text-[16px] leading-8 text-muted">
-          Haki starts with a file you already have. It qualifies, sequences, and runs outreach in simulation until you
-          connect a provider. You always review first, then the work runs toward the outcome you named.
+          Haki starts with a file you already have. It qualifies, sequences, and runs outreach in simulation until you connect a provider. You always review first, then the work runs toward the outcome you named.
         </p>
         <Link
           href="/haki"
@@ -601,16 +544,16 @@ export function LandingPage() {
 
       <div className="px-3 pb-3">
         <footer
-          className="relative min-h-[88vh] overflow-hidden rounded-[28px] bg-cover bg-bottom"
+          className="relative min-h-[80vh] overflow-hidden rounded-[20px] bg-cover bg-bottom"
           style={{ backgroundImage: "url(/haki-grassland.png)" }}
         >
-          <div className="absolute inset-0 bg-gradient-to-b from-[#f4f4f2]/40 via-transparent to-black/25" />
-          <div className="relative z-10 flex min-h-[88vh] flex-col">
-            <div className="flex flex-1 flex-col items-center justify-end px-6 pb-[22vh] pt-[34vh]">
+          <div className="absolute inset-0 bg-gradient-to-b from-[#f7f7f4]/35 via-transparent to-black/30" />
+          <div className="relative z-10 flex min-h-[80vh] flex-col">
+            <div className="flex flex-1 flex-col items-center justify-end px-6 pb-[20vh] pt-[30vh]">
               <p className="font-serif text-[22vw] leading-none tracking-[-0.04em] text-white drop-shadow-[0_8px_40px_rgba(0,0,0,0.28)] sm:text-[18vw]">
                 Haki
               </p>
-              <p className="mt-3 text-[13px] tracking-[0.18em] text-white/80 uppercase">An MK Labs Product</p>
+              <p className="mt-3 text-[12px] tracking-[0.2em] text-white/80 uppercase">An MK Labs Product</p>
             </div>
             <div className="flex flex-col items-center gap-3 px-6 pb-8 text-center text-white/90 sm:flex-row sm:justify-between">
               <span className="text-[13px] font-medium">Haki · MK Labs</span>
@@ -623,6 +566,9 @@ export function LandingPage() {
                 </button>
                 <button type="button" onClick={() => scrollToId("product")} className="hover:text-white">
                   Product
+                </button>
+                <button type="button" onClick={() => scrollToId("stories")} className="hover:text-white">
+                  Stories
                 </button>
                 <button type="button" onClick={() => scrollToId("faq")} className="hover:text-white">
                   FAQ
@@ -637,123 +583,241 @@ export function LandingPage() {
   );
 }
 
-function FloatCard({
-  children,
-  className,
-  accent,
-}: {
-  children: React.ReactNode;
-  className?: string;
-  accent?: string;
-}) {
+function ProblemList() {
+  const [open, setOpen] = useState(0);
+
   return (
-    <div
-      className={cn(
-        "overflow-hidden rounded-[24px] bg-white shadow-[0_18px_50px_rgba(15,23,42,0.08)] ring-1 ring-black/[0.04]",
-        className,
-      )}
-    >
-      {accent ? <div className={cn("h-1.5 w-full", accent)} /> : null}
-      {children}
+    <div className="border-t border-line">
+      {PAINS.map((pain, index) => {
+        const active = open === index;
+        return (
+          <button
+            key={pain.title}
+            type="button"
+            aria-expanded={active}
+            onClick={() => setOpen(active ? -1 : index)}
+            className="block w-full border-b border-line py-5 text-left"
+          >
+            <div className="flex items-baseline justify-between gap-6">
+              <span className="font-mono text-[12px] text-faint">{String(index + 1).padStart(2, "0")}</span>
+              <span className="flex-1 text-[18px] font-medium tracking-[-0.02em]">{pain.title}</span>
+              <span className="font-mono text-[12px] text-faint">{active ? "−" : "+"}</span>
+            </div>
+            <AnimatePresence initial={false}>
+              {active ? (
+                <motion.p
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: "auto", opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.28, ease }}
+                  className="overflow-hidden pl-10 pr-8 pt-3 text-[14px] leading-7 text-muted"
+                >
+                  {pain.body}
+                </motion.p>
+              ) : null}
+            </AnimatePresence>
+          </button>
+        );
+      })}
     </div>
   );
 }
 
-function FileWidget({
-  name,
-  meta,
-  tone,
-  tilt,
-}: {
-  name: string;
-  meta: string;
-  tone: string;
-  tilt: string;
-}) {
-  return (
-    <div className={cn("w-[180px] rounded-[22px] bg-white p-3 shadow-[0_22px_50px_rgba(15,23,42,0.12)]", tilt)}>
-      <div className={cn("rounded-[16px] px-3 py-4 text-left text-white", tone)}>
-        <div className="text-[13px] font-semibold">{name}</div>
-        <div className="mt-1 text-[11px] text-white/80">{meta}</div>
-      </div>
-      <div className="mt-2 px-1 text-[11px] text-faint">Ready to map</div>
-    </div>
-  );
-}
+function ProductDesk() {
+  const [open, setOpen] = useState(0);
+  const feature = FEATURES[open];
 
-function FeaturePanel({ index }: { index: number }) {
-  const panels = [
-    <div key="ingest" className="rounded-[24px] bg-white p-5 shadow-[0_22px_50px_rgba(15,23,42,0.1)] ring-1 ring-black/[0.04]">
-      <div className="text-[11px] uppercase tracking-[0.12em] text-faint">File preview</div>
-      <div className="mt-3 space-y-2 text-[13px]">
-        <div className="flex justify-between rounded-[10px] bg-[#f7f7f8] px-3 py-2">
-          <span>18 rows · 9 columns</span>
-          <span className="text-good">Mapped</span>
+  return (
+    <div className="mt-14 grid items-start gap-10 lg:grid-cols-[0.92fr_1.08fr]">
+      <div>
+        <div className="space-y-2">
+          {FEATURES.map((item, index) => {
+            const active = open === index;
+            return (
+              <button
+                key={item.kicker}
+                type="button"
+                onClick={() => setOpen(index)}
+                className={`block w-full rounded-[16px] px-4 py-4 text-left transition ${
+                  active ? "bg-[#1d1d1f] text-white shadow-[0_16px_36px_rgba(29,29,31,0.18)]" : "bg-white/55 text-ink hover:bg-white"
+                }`}
+              >
+                <div className={`font-mono text-[11px] tracking-[0.14em] uppercase ${active ? "text-white/45" : "text-[#8a8478]"}`}>
+                  {String(index + 1).padStart(2, "0")} · {item.kicker}
+                </div>
+                <div className="mt-1 text-[17px] font-semibold tracking-[-0.03em]">{item.title}</div>
+              </button>
+            );
+          })}
         </div>
-        <div className="flex justify-between rounded-[10px] px-3 py-2">
-          <span className="text-muted">email</span>
-          <span>Email</span>
-        </div>
-        <div className="flex justify-between rounded-[10px] px-3 py-2">
-          <span className="text-muted">owner_name</span>
-          <span>Contact</span>
-        </div>
-        <div className="flex justify-between rounded-[10px] px-3 py-2">
-          <span className="text-muted">notes</span>
-          <span>Custom field</span>
-        </div>
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={feature.kicker}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.28, ease }}
+            className="mt-6"
+          >
+            <p className="text-[15px] leading-7 text-[#5c574e]">{feature.body}</p>
+            <ul className="mt-5 space-y-2">
+              {feature.points.map((point) => (
+                <li key={point} className="flex gap-2 text-[14px] leading-6 text-[#1d1d1f]">
+                  <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#007aff]" />
+                  {point}
+                </li>
+              ))}
+            </ul>
+          </motion.div>
+        </AnimatePresence>
       </div>
-    </div>,
-    <div key="qualify" className="rounded-[24px] bg-white p-5 shadow-[0_22px_50px_rgba(15,23,42,0.1)] ring-1 ring-black/[0.04]">
-      <div className="text-[11px] uppercase tracking-[0.12em] text-faint">ICP match</div>
-      <div className="mt-4 text-[40px] font-semibold tracking-[-0.04em]">87</div>
-      <div className="text-[13px] text-good">Qualified</div>
-      <p className="mt-3 text-[13px] leading-6 text-muted">
-        SaaS, 50 to 500 people, United States, founder title. The contact sits inside the band you wrote.
-      </p>
-    </div>,
-    <div key="flow" className="rounded-[24px] bg-white p-5 shadow-[0_22px_50px_rgba(15,23,42,0.1)] ring-1 ring-black/[0.04]">
-      <div className="text-[11px] uppercase tracking-[0.12em] text-faint">Path</div>
-      <div className="mt-4 space-y-3 text-[13px]">
-        {["Lead enters", "Email", "Wait 24 hours", "Replied? Stop", "LinkedIn, then WhatsApp"].map((step, i) => (
-          <div key={step} className="flex items-center gap-3">
-            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#f2f2f7] text-[11px]">{i + 1}</span>
-            {step}
-          </div>
+
+      <div className="relative min-h-[460px]">
+        <div className="absolute inset-x-6 bottom-0 h-16 rounded-full bg-black/10 blur-2xl" />
+        {FEATURES.map((_, index) => (
+          <motion.div
+            key={FEATURES[index].kicker}
+            className="absolute left-1/2 top-6 w-[min(100%,380px)]"
+            animate={{
+              x: `${(index - open) * 18 - 50}%`,
+              y: Math.abs(index - open) * 18,
+              rotate: (index - open) * 4,
+              scale: index === open ? 1 : 0.94,
+              zIndex: index === open ? 20 : 10 - Math.abs(index - open),
+            }}
+            transition={{ duration: 0.45, ease }}
+          >
+            <button type="button" onClick={() => setOpen(index)} className="block w-full text-left">
+              <DeskCard index={index} active={index === open} />
+            </button>
+          </motion.div>
         ))}
       </div>
-    </div>,
-    <div key="review" className="rounded-[24px] bg-white p-5 shadow-[0_22px_50px_rgba(15,23,42,0.1)] ring-1 ring-black/[0.04]">
-      <div className="text-[11px] uppercase tracking-[0.12em] text-faint">Lead state</div>
-      <div className="mt-4 space-y-2 text-[13px]">
-        <div className="flex justify-between">
-          <span className="text-muted">Step</span>
-          <span>LinkedIn message</span>
-        </div>
-        <div className="flex justify-between">
-          <span className="text-muted">Status</span>
-          <span>Waiting</span>
-        </div>
-        <div className="flex justify-between">
-          <span className="text-muted">Next run</span>
-          <span>Tomorrow, 09:40</span>
-        </div>
-        <div className="mt-3 rounded-[10px] bg-[#e8e8ff] px-3 py-2 text-[12px] text-[#5856d6]">Simulated until a provider is connected</div>
-      </div>
-    </div>,
-  ];
-
-  return panels[index] ?? panels[0];
+    </div>
+  );
 }
 
-function VerifiedBadge() {
+function DeskCard({ index, active }: { index: number; active: boolean }) {
+  const frame = `rounded-[18px] border bg-white p-5 shadow-[0_22px_50px_rgba(29,29,31,0.12)] ${
+    active ? "border-white" : "border-black/5"
+  }`;
+
+  if (index === 0) {
+    return (
+      <div className={frame}>
+        <div className="flex items-center justify-between">
+          <span className="text-[11px] tracking-[0.14em] text-faint uppercase">File preview</span>
+          <span className="rounded-full bg-good-soft px-2 py-0.5 text-[11px] font-medium text-good">Mapped</span>
+        </div>
+        <div className="mt-4 flex gap-2">
+          {["CSV", "XLSX", "JSON"].map((kind, i) => (
+            <span
+              key={kind}
+              className={`rounded-[10px] px-2.5 py-1 text-[11px] font-medium ${i === 0 ? "bg-[#1d1d1f] text-white" : "bg-[#f2f2f7] text-muted"}`}
+            >
+              {kind}
+            </span>
+          ))}
+        </div>
+        <div className="mt-4 rounded-[12px] bg-[#f7f7f4] p-3 text-[13px]">
+          <div className="flex justify-between border-b border-black/5 pb-2">
+            <span>fried-shops.csv</span>
+            <span className="text-muted">18 × 9</span>
+          </div>
+          {[
+            ["email", "Email"],
+            ["owner_name", "Contact"],
+            ["notes", "Custom field"],
+          ].map(([from, to]) => (
+            <div key={from} className="flex justify-between py-1.5">
+              <span className="font-mono text-[11px] text-muted">{from}</span>
+              <span>{to}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (index === 1) {
+    return (
+      <div className={frame}>
+        <div className="text-[11px] tracking-[0.14em] text-faint uppercase">ICP match</div>
+        <div className="mt-4 flex items-end gap-4">
+          <div className="relative flex h-[104px] w-[104px] items-center justify-center rounded-full bg-[conic-gradient(#007aff_0_313deg,#e8e8ed_313deg)]">
+            <div className="flex h-[84px] w-[84px] flex-col items-center justify-center rounded-full bg-white">
+              <span className="text-[28px] font-semibold tracking-[-0.05em]">87</span>
+              <span className="text-[10px] text-faint">score</span>
+            </div>
+          </div>
+          <div>
+            <div className="text-[13px] font-medium text-good">Qualified</div>
+            <p className="mt-1 text-[12px] leading-5 text-muted">Inside the band you wrote. You still pick the audience.</p>
+          </div>
+        </div>
+        <div className="mt-4 flex flex-wrap gap-1.5">
+          {["SaaS", "50 to 500", "United States", "Founder"].map((chip) => (
+            <span key={chip} className="rounded-full bg-[#f2f2f7] px-2.5 py-1 text-[11px] text-ink">
+              {chip}
+            </span>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (index === 2) {
+    const path = [
+      { n: "01", label: "Lead enters", tone: "bg-[#1d1d1f] text-white" },
+      { n: "02", label: "Email", tone: "bg-[#e8f1ff] text-[#007aff]" },
+      { n: "03", label: "Wait 24h", tone: "bg-[#fff1e8] text-[#c93400]" },
+      { n: "04", label: "Replied? Stop", tone: "bg-[#ededff] text-[#5856d6]" },
+      { n: "05", label: "LinkedIn, then WhatsApp", tone: "bg-[#e4f6f3] text-[#128c7e]" },
+    ];
+    return (
+      <div className={frame}>
+        <div className="text-[11px] tracking-[0.14em] text-faint uppercase">Path</div>
+        <div className="mt-4 space-y-2">
+          {path.map((step) => (
+            <div key={step.n} className="flex items-center gap-3">
+              <span className={`flex h-8 min-w-8 items-center justify-center rounded-full text-[11px] font-medium ${step.tone}`}>
+                {step.n}
+              </span>
+              <span className="text-[13px] font-medium">{step.label}</span>
+            </div>
+          ))}
+        </div>
+        <p className="mt-4 text-[12px] text-muted">AI can draft. It cannot launch.</p>
+      </div>
+    );
+  }
+
   return (
-    <svg viewBox="0 0 24 24" className="h-4 w-4 shrink-0 text-[#1d9bf0]" aria-label="Verified" role="img">
-      <path
-        fill="currentColor"
-        d="M22.5 12.5c0-1.2-.7-2.3-1.8-2.8.2-1.2-.2-2.5-1.2-3.3-1-.8-2.4-.9-3.5-.3-.8-1-2.1-1.6-3.5-1.6s-2.7.6-3.5 1.6c-1.1-.6-2.5-.5-3.5.3-1 .8-1.4 2.1-1.2 3.3-1.1.5-1.8 1.6-1.8 2.8s.7 2.3 1.8 2.8c-.2 1.2.2 2.5 1.2 3.3.6.5 1.3.7 2.1.7.5 0 1-.1 1.4-.4.8 1 2.1 1.6 3.5 1.6s2.7-.6 3.5-1.6c.4.3.9.4 1.4.4.8 0 1.5-.2 2.1-.7 1-.8 1.4-2.1 1.2-3.3 1.1-.5 1.8-1.6 1.8-2.8zm-12.2 2.6-2.8-2.8 1.1-1.1 1.7 1.7 4.2-4.2 1.1 1.1-5.3 5.3z"
-      />
-    </svg>
+    <div className={frame}>
+      <div className="flex items-center justify-between">
+        <span className="text-[11px] tracking-[0.14em] text-faint uppercase">Lead state</span>
+        <span className="rounded-full bg-[#ededff] px-2 py-0.5 text-[11px] font-medium text-[#5856d6]">Simulation</span>
+      </div>
+      <div className="mt-4 rounded-[12px] bg-[#f7f7f4] p-3">
+        <div className="text-[14px] font-semibold">Sofia Mendez</div>
+        <div className="text-[12px] text-muted">Pilon Fry House</div>
+        <div className="mt-3 grid grid-cols-3 gap-2 text-[12px]">
+          <div>
+            <div className="text-faint">Step</div>
+            <div className="mt-0.5 font-medium">LinkedIn</div>
+          </div>
+          <div>
+            <div className="text-faint">Status</div>
+            <div className="mt-0.5 font-medium">Waiting</div>
+          </div>
+          <div>
+            <div className="text-faint">Next</div>
+            <div className="mt-0.5 font-medium">09:40</div>
+          </div>
+        </div>
+      </div>
+      <p className="mt-3 text-[12px] leading-5 text-muted">Nothing pretends to be a real send until a provider is connected.</p>
+    </div>
   );
 }
 
@@ -773,10 +837,10 @@ function Reveal({
     <Tag
       id={id}
       className={className}
-      initial={{ opacity: 0, y: 28 }}
+      initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, amount: 0.22 }}
-      transition={{ duration: 0.7, ease, delay }}
+      viewport={{ once: true, amount: 0.18 }}
+      transition={{ duration: 0.65, ease, delay }}
     >
       {children}
     </Tag>
@@ -813,9 +877,6 @@ function HakiAppPreview() {
           </div>
           <div className="hidden items-center gap-2 sm:flex">
             <div className="h-7 w-36 rounded-[8px] bg-[#f2f2f7] text-[11px] leading-7 text-faint">Search ⌘K</div>
-            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-[#e8e8ed] text-[9px] font-semibold">
-              HK
-            </div>
           </div>
         </div>
 
@@ -830,14 +891,10 @@ function HakiAppPreview() {
               </div>
             </div>
             <div className="space-y-2 text-[11px] leading-5 text-ink">
-              <p className="font-medium">Here’s your campaign preview: “Fried Shop Owner Outreach”.</p>
+              <p className="font-medium">Campaign preview: Fried Shop Owner Outreach.</p>
               <p className="text-muted">
-                Goal: start conversations. Email → wait 24h → follow-up → LinkedIn → Twitter → YouTube sapien → WhatsApp.
+                Goal: start conversations. Email, wait 24h, follow-up, LinkedIn, then WhatsApp.
               </p>
-              <div className="flex gap-1">
-                <span className="rounded-full bg-[#f2f2f7] px-2 py-0.5 text-[10px] text-muted">Read workspace</span>
-                <span className="rounded-full bg-[#f2f2f7] px-2 py-0.5 text-[10px] text-muted">Drafted multi-touch</span>
-              </div>
             </div>
           </div>
 
@@ -849,13 +906,9 @@ function HakiAppPreview() {
               </div>
               <span className="text-[11px] text-accent">Open table</span>
             </div>
-            <div className="mb-2 flex w-fit rounded-[8px] bg-white p-0.5 text-[11px]">
-              <span className="rounded-[6px] bg-[#f2f2f7] px-2.5 py-1 font-medium">File</span>
-              <span className="px-2.5 py-1 text-muted">Campaign</span>
-            </div>
-            <div className="overflow-hidden rounded-[10px] border border-line bg-white">
+            <div className="overflow-hidden rounded-[8px] border border-line bg-white">
               <table className="w-full table-fixed text-left text-[11px]">
-                <thead className="text-[9px] uppercase tracking-[0.12em] text-faint">
+                <thead className="text-[9px] tracking-[0.12em] text-faint uppercase">
                   <tr className="border-b border-line">
                     <th className="px-3 py-2 font-medium">Business</th>
                     <th className="px-3 py-2 font-medium">Email</th>
@@ -869,7 +922,7 @@ function HakiAppPreview() {
                       <td className="truncate px-3 py-2 text-muted">{email}</td>
                       <td className="px-3 py-2">
                         <span
-                          className={`rounded-full px-1.5 py-0.5 text-[10px] ${status === "Qualified" ? "bg-good-soft text-good" : "bg-warn-soft text-warn"}`}
+                          className={`text-[10px] ${status === "Qualified" ? "text-good" : "text-warn"}`}
                         >
                           {status}
                         </span>
@@ -883,5 +936,16 @@ function HakiAppPreview() {
         </div>
       </div>
     </div>
+  );
+}
+
+function VerifiedBadge() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-4 w-4 shrink-0 text-[#1d9bf0]" aria-label="Verified" role="img">
+      <path
+        fill="currentColor"
+        d="M22.5 12.5c0-1.2-.7-2.3-1.8-2.8.2-1.2-.2-2.5-1.2-3.3-1-.8-2.4-.9-3.5-.3-.8-1-2.1-1.6-3.5-1.6s-2.7.6-3.5 1.6c-1.1-.6-2.5-.5-3.5.3-1 .8-1.4 2.1-1.2 3.3-1.1.5-1.8 1.6-1.8 2.8s.7 2.3 1.8 2.8c-.2 1.2.2 2.5 1.2 3.3.6.5 1.3.7 2.1.7.5 0 1-.1 1.4-.4.8 1 2.1 1.6 3.5 1.6s2.7-.6 3.5-1.6c.4.3.9.4 1.4.4.8 0 1.5-.2 2.1-.7 1-.8 1.4-2.1 1.2-3.3 1.1-.5 1.8-1.6 1.8-2.8zm-12.2 2.6-2.8-2.8 1.1-1.1 1.7 1.7 4.2-4.2 1.1 1.1-5.3 5.3z"
+      />
+    </svg>
   );
 }

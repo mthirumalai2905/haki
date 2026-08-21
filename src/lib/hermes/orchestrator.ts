@@ -9,6 +9,7 @@ import {
   reviseWorkflow,
 } from "../workflow/revise";
 import { runCampaignGraph, shouldEditCampaignGraph } from "./campaign-graph";
+import { polishChatReply } from "./prose";
 import type { HermesChatMessage, HermesProposal, HermesTurn } from "./types";
 
 const SYSTEM = `You are Hermes, Haki's orchestrator. DeepSeek is your reasoning model.
@@ -19,16 +20,21 @@ If the user is outside Haki or this workspace, refuse in one or two sentences an
 
 When the user wants a new campaign or sequence:
 1. Use get_workspace_context if you need counts or ICP.
-2. Call draft_multitouch_campaign for email → wait → follow-up → LinkedIn → Twitter/YouTube research → WhatsApp.
-3. Otherwise call draft_campaign or draft_sequence.
-4. Use qualify_leads when they ask to score or qualify the list.
+2. Prefer draft_sequence_spec for an ordered multi-channel list (email, LinkedIn, SMS, call task).
+3. Call draft_multitouch_campaign for the fried-shop demo path.
+4. Otherwise call draft_campaign or draft_sequence.
+5. Use qualify_leads when they ask to score or qualify the list.
 
-When a campaign or sequence already exists on the canvas and the user asks to change it:
-Call add_workflow_node, remove_workflow_node, or edit_workflow_node. The campaign is a LangGraph-backed node graph.
-Never call draft_campaign, draft_sequence, or draft_multitouch_campaign for an edit.
-Keep unspecified nodes and edges. Never replace the whole graph.
+When a sequence already exists and the user asks to change delays, add a channel, or edit a step:
+Call revise_sequence_spec. Do not overwrite steps the operator marked editedByUser.
+add_workflow_node / remove_workflow_node / edit_workflow_node remain as a canvas fallback.
 
-Write the reply yourself after tools. Do not use a canned script.`;
+Write the reply yourself after tools. Do not use a canned script.
+
+Voice: operator prose. Short sentences. Periods and colons.
+Never output markdown. No **bold**, no __underline__, no # headings, no pipe tables, no --- rules, no :: labels, no em dashes.
+If you need a breakdown, use short lines or a numbered list with plain words.
+Never leave raw markup in the reply.`;
 
 export async function runHermes(input: {
   workspaceId: string;
@@ -41,10 +47,14 @@ export async function runHermes(input: {
     return missingDeepSeekTurn();
   }
 
-  const locked =
-    shouldEditCampaignGraph(input.message, input.current) || isWorkflowEdit(input.message)
-      ? ((await runCampaignGraph(input).catch(() => undefined)) ?? lockWorkflowEdit(input))
-      : undefined;
+  let locked: HermesProposal | undefined;
+  try {
+    if (shouldEditCampaignGraph(input.message, input.current) || isWorkflowEdit(input.message)) {
+      locked = (await runCampaignGraph(input).catch(() => undefined)) ?? lockWorkflowEdit(input);
+    }
+  } catch (error) {
+    console.error("Hermes graph edit failed", error);
+  }
   const editing = Boolean(input.current?.workflow) && isWorkflowEdit(input.message);
 
   if (!editing && !locked) {
@@ -57,7 +67,9 @@ export async function runHermes(input: {
           notes: "Out of scope. Refuse and steer back to Haki only.",
         }));
       return {
-        reply: refusal || "I only help with Haki — this workspace, your leads, and the outreach workflow.",
+        reply: polishChatReply(
+          refusal || "I only help with Haki. This workspace, your leads, and the outreach workflow.",
+        ),
         proposal: input.current,
         toolsUsed: ["scope_gate"],
         provider: "deepseek",
@@ -168,14 +180,14 @@ async function finalizeReply(
   proposal: HermesProposal | undefined,
   toolNotes: string[],
 ) {
-  if (modelReply.trim()) return modelReply.trim();
+  if (modelReply.trim()) return polishChatReply(modelReply);
   const notes = [
     proposal
-      ? `Workflow “${proposal.name}” has ${proposal.workflow?.nodes.length ?? 0} nodes. Changes: ${(proposal.changes ?? []).join("; ") || "none"}.`
+      ? `Workflow "${proposal.name}" has ${proposal.workflow?.nodes.length ?? 0} nodes. Changes: ${(proposal.changes ?? []).join("; ") || "none"}.`
       : "No workflow change.",
     ...toolNotes,
   ].join("\n");
-  return writeHakiReply({ message, notes });
+  return polishChatReply(await writeHakiReply({ message, notes }));
 }
 
 function lockWorkflowEdit(input: { message: string; current?: HermesProposal }) {

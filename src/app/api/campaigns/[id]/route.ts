@@ -37,6 +37,8 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
       ...campaign,
       audience: parseJson(campaign.audience, {}),
       channels: parseJson(campaign.channels, []),
+      sendMode: campaign.sendMode,
+      sendAt: campaign.sendAt,
       workflow: version
         ? {
             id: version.id,
@@ -73,6 +75,8 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
         goalCustom: body.goalCustom ?? existing.goalCustom,
         audience: body.audience ? JSON.stringify(body.audience) : existing.audience,
         channels: body.channels ? JSON.stringify(body.channels) : existing.channels,
+        sendMode: body.sendMode ?? existing.sendMode,
+        sendAt: body.sendAt ? new Date(body.sendAt) : existing.sendAt,
       },
     });
 

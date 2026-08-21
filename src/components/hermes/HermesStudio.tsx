@@ -12,12 +12,20 @@ import { overlayWorkflow } from "@/lib/workflow/revise";
 import type { Audience, CampaignGoal, WorkflowGraph } from "@/lib/types";
 import type { HermesProposal } from "@/lib/hermes/types";
 
-export function HermesStudio({ kind }: { kind: "campaign" | "sequence" }) {
+export function HermesStudio({
+  kind,
+  seedName,
+  seedWorkflow,
+}: {
+  kind: "campaign" | "sequence";
+  seedName?: string;
+  seedWorkflow?: WorkflowGraph;
+}) {
   const router = useRouter();
-  const [name, setName] = useState(kind === "campaign" ? "Fried shop outreach" : "Fried shop sequence");
+  const [name, setName] = useState(seedName || (kind === "campaign" ? "Fried shop outreach" : "Untitled sequence"));
   const [goal, setGoal] = useState<CampaignGoal>("book_meetings");
   const [audience, setAudience] = useState<Audience>({ type: "all" });
-  const [workflow, setWorkflow] = useState<WorkflowGraph>(defaultWorkflow());
+  const [workflow, setWorkflow] = useState<WorkflowGraph>(seedWorkflow ?? defaultWorkflow());
   const [messages, setMessages] = useState<HermesProposal["messages"]>([]);
   const [saving, setSaving] = useState(false);
 
@@ -94,7 +102,7 @@ export function HermesStudio({ kind }: { kind: "campaign" | "sequence" }) {
         onProposal={applyProposal}
       />
       <div className="flex min-w-0 flex-col gap-3">
-        <div className="flex items-center gap-3 rounded-lg border border-line bg-surface px-4 py-3">
+        <div className="flex items-center gap-3 rounded-[14px] border border-line bg-white px-4 py-3 shadow-[0_8px_20px_rgba(29,29,31,0.04)]">
           <input className="field max-w-sm" value={name} onChange={(event) => setName(event.target.value)} />
           {kind === "campaign" ? (
             <select className="field max-w-[180px]" value={goal} onChange={(event) => setGoal(event.target.value as CampaignGoal)}>
@@ -117,7 +125,9 @@ export function HermesStudio({ kind }: { kind: "campaign" | "sequence" }) {
           </div>
         </div>
         <p className="text-xs text-muted">
-          Chat edits retarget nodes on this canvas. Waits, conditions, and later touches stay unless you ask to remove them.
+          {kind === "sequence"
+            ? "Chat edits this canvas. Start from Templates if you want a ready path. Waits and conditions stay unless you ask to remove them."
+            : "Chat edits retarget nodes on this canvas. Waits, conditions, and later touches stay unless you ask to remove them."}
         </p>
         <div className="min-h-0 flex-1">
           <CanvasGuard>

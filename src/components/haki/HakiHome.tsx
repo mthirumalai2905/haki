@@ -435,18 +435,23 @@ function useDictation(input: string, onChange: (value: string) => void) {
 
 const CONTEXT_WINDOW = 64_000;
 
+function tokensFrom(text: string) {
+  const trimmed = text.trim();
+  if (!trimmed) return 0;
+  return Math.ceil(trimmed.length / 4);
+}
+
 function sessionContext(
   messages: HermesChatMessage[],
   proposal: HermesProposal | null | undefined,
   input: string,
 ) {
-  const text = [
-    ...messages.map((item) => item.content),
-    input,
-    proposal ? JSON.stringify(proposal) : "",
-  ].join("\n");
-  const used = Math.ceil(text.length / 4) + 900;
-  const pct = Math.min(100, Math.round((used / CONTEXT_WINDOW) * 100));
+  const chat = messages.map((item) => item.content).join("\n");
+  const draft = proposal
+    ? [proposal.name, ...(proposal.messages ?? []).map((item) => `${item.subject ?? ""} ${item.body ?? ""}`)].join("\n")
+    : "";
+  const used = tokensFrom(chat) + tokensFrom(input) + tokensFrom(draft);
+  const pct = used === 0 ? 0 : Math.min(100, Math.round((used / CONTEXT_WINDOW) * 100));
   return { used, window: CONTEXT_WINDOW, pct };
 }
 
@@ -571,7 +576,7 @@ function ContextRing({ used, window, pct }: { used: number; window: number; pct:
       </span>
       <div className="pointer-events-none absolute bottom-full right-0 mb-2 hidden w-[200px] rounded-[12px] border border-line bg-white px-3 py-2 text-left text-[11px] leading-4 text-muted shadow-[0_12px_30px_rgba(0,0,0,0.1)] group-hover:block">
         <div className="font-medium text-ink">Session window {pct}%</div>
-        {label}. The ring fills as this chat, the draft, and the file context grow.
+        {label}. Empty stays at 0. The ring fills as you type, the chat grows, or drafted message copy lands.
       </div>
     </div>
   );

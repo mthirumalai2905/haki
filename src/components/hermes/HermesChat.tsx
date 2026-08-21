@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
+import { Markdown } from "@/components/haki/Markdown";
 import { api } from "@/lib/api";
 import type { HermesChatMessage, HermesProposal } from "@/lib/hermes/types";
 
@@ -117,10 +118,10 @@ export function HermesChat({
             <div key={item.id} className={item.role === "user" ? "text-right" : ""}>
               <div
                 className={`inline-block max-w-[92%] rounded-[16px] px-3.5 py-2 text-[13px] leading-6 ${
-                  item.role === "user" ? "bg-accent text-white" : "bg-[#f2f2f7] text-ink"
+                  item.role === "user" ? "bg-accent text-white" : "bg-[#f7f7f8] text-ink"
                 }`}
               >
-                {item.content}
+                {item.role === "user" ? item.content : <Markdown text={item.content} />}
               </div>
               {item.toolsUsed?.length ? (
                 <div className="mt-1 text-[10px] uppercase tracking-[0.12em] text-faint">

@@ -7,6 +7,8 @@ import { applyGraphOps, parseGraphOps } from "../workflow/ops";
 import { applyRevisionToProposal, reviseWorkflow } from "../workflow/revise";
 import type { DeepSeekTool } from "../ai/deepseek";
 import type { CampaignGoal, ChannelId, WorkflowGraph } from "../types";
+import { specToGraph, graphToSpec } from "../sequence/compile";
+import type { SequenceSpec } from "../sequence/types";
 import type { HermesProposal } from "./types";
 
 export const HERMES_TOOLS: DeepSeekTool[] = [
@@ -156,6 +158,39 @@ export const HERMES_TOOLS: DeepSeekTool[] = [
   {
     type: "function",
     function: {
+      name: "draft_sequence_spec",
+      description:
+        "Create an ordered multi-channel sequence (email, LinkedIn, SMS, call task, etc.) from natural language. Primary authoring surface. Never launch.",
+      parameters: {
+        type: "object",
+        properties: {
+          request: { type: "string" },
+          name: { type: "string" },
+          goal: { type: "string" },
+          channels: { type: "array", items: { type: "string" } },
+        },
+        required: ["request"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "revise_sequence_spec",
+      description:
+        "Patch the current ordered sequence. Use for add/remove/reorder, delay changes, and channel edits. Does not overwrite steps marked editedByUser.",
+      parameters: {
+        type: "object",
+        properties: {
+          request: { type: "string" },
+        },
+        required: ["request"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
       name: "qualify_leads",
       description:
         "Score workspace leads against the current ICP with DeepSeek. Use when the user asks to qualify, score, or match the list.",
@@ -199,6 +234,14 @@ export async function runHermesTool(
   }
   if (name === "revise_campaign") {
     const proposal = await reviseCampaign(workspaceId, args, context.current);
+    return { result: summarizeProposal(proposal), proposal };
+  }
+  if (name === "draft_sequence_spec") {
+    const proposal = await draftSequenceSpec(workspaceId, args, context.current);
+    return { result: summarizeProposal(proposal), proposal };
+  }
+  if (name === "revise_sequence_spec") {
+    const proposal = await reviseSequenceSpec(workspaceId, args, context.current);
     return { result: summarizeProposal(proposal), proposal };
   }
   if (name === "qualify_leads") {
@@ -261,7 +304,7 @@ export async function draftCampaign(
   });
   const messages = await messagesFor(workflow, goal);
 
-  return {
+  const proposal: HermesProposal = {
     kind: "campaign",
     name: String(args.name || workflow.name || "Untitled campaign"),
     goal,
@@ -270,10 +313,11 @@ export async function draftCampaign(
     workflow,
     messages,
     warnings: [
-      "Hermes drafted this. Review the canvas before saving.",
+      "Hermes drafted this. Review the sequence before saving.",
       "Launch stays in simulation mode.",
     ],
   };
+  return withSequence(proposal, request);
 }
 
 export async function draftMultitouchCampaign(
@@ -282,7 +326,7 @@ export async function draftMultitouchCampaign(
 ): Promise<HermesProposal> {
   const count = await db.lead.count({ where: { workspaceId } });
   const workflow = multiTouchWorkflow();
-  return {
+  const proposal: HermesProposal = {
     kind: "campaign",
     name: String(args.name || DUMMY_CAMPAIGN_NAME),
     goal: "start_conversations",
@@ -293,9 +337,10 @@ export async function draftMultitouchCampaign(
     warnings: [
       "Dummy multi-touch path. No email provider or social APIs.",
       "Twitter and YouTube steps produce simulated sapien, then personalize WhatsApp.",
-      "Hermes drafted this. Review the canvas. Nothing launches until you say so.",
+      "Hermes drafted this. Review the sequence. Nothing launches until you say so.",
     ],
   };
+  return { ...proposal, sequence: graphToSpec(workflow) };
 }
 
 export async function draftSequence(args: Record<string, unknown>): Promise<HermesProposal> {
@@ -303,14 +348,122 @@ export async function draftSequence(args: Record<string, unknown>): Promise<Herm
   const channels = normalizeChannels(args.channels) ?? inferChannels(request);
   const workflow = await safeWorkflow({ request, channels });
   const messages = await messagesFor(workflow, "start_conversations");
-  return {
+  const proposal: HermesProposal = {
     kind: "sequence",
     name: String(args.name || workflow.name || "Untitled sequence"),
     channels,
     workflow,
     messages,
-    warnings: ["Reusable sequence. Attach it to a campaign after you review the canvas."],
+    warnings: ["Reusable sequence. Attach it to a campaign after you review the list."],
   };
+  return withSequence(proposal, request);
+}
+
+export async function draftSequenceSpec(
+  workspaceId: string,
+  args: Record<string, unknown>,
+  current?: HermesProposal,
+): Promise<HermesProposal> {
+  const request = String(args.request ?? "");
+  const goal = (args.goal as CampaignGoal) || inferGoal(request);
+  const channels = normalizeChannels(args.channels) ?? inferChannels(request);
+  const count = await db.lead.count({ where: { workspaceId } });
+  const sequence = await ai.generateSequenceSpec({
+    request,
+    goal,
+    channels,
+    current: current?.sequence,
+  });
+  const workflow = specToGraph({ ...sequence, name: String(args.name || sequence.name) });
+  return {
+    kind: current?.kind || "campaign",
+    campaignId: current?.campaignId,
+    name: String(args.name || sequence.name || current?.name || "Untitled campaign"),
+    goal,
+    audience: current?.audience ?? { type: "all", count },
+    channels,
+    sequence,
+    workflow,
+    messages: messagesFromSequence(sequence),
+    warnings: ["Chat drafted this sequence. Review each step. Nothing launches until you say so."],
+  };
+}
+
+export async function reviseSequenceSpec(
+  workspaceId: string,
+  args: Record<string, unknown>,
+  current?: HermesProposal,
+): Promise<HermesProposal> {
+  const request = String(args.request ?? "");
+  const base = current?.workflow
+    ? { ...current, sequence: current.sequence ?? graphToSpec(current.workflow) }
+    : current?.sequence
+      ? current
+      : await draftSequenceSpec(workspaceId, args, current);
+
+  let workflow = base.workflow ?? specToGraph({ ...base.sequence!, name: base.name });
+  const ops = parseGraphOps(request);
+  if (ops.length) {
+    const operated = applyGraphOps(workflow, ops);
+    if (operated.applied) workflow = operated.workflow;
+  }
+
+  const fromGraph = graphToSpec(workflow);
+  const sequence = await ai.generateSequenceSpec({
+    request,
+    goal: base.goal,
+    channels: base.channels,
+    current: fromGraph,
+  });
+
+  const compiled = specToGraph({ ...sequence, name: base.name });
+  const nextWorkflow = logicCount(compiled) >= logicCount(workflow) ? compiled : workflow;
+
+  return {
+    ...base,
+    sequence: graphToSpec(nextWorkflow),
+    workflow: nextWorkflow,
+    messages: messagesFromSequence(graphToSpec(nextWorkflow)),
+    changes: [
+      ...(ops.length ? ["Applied weekday or send-window checks to the canvas"] : []),
+      `Patched sequence from: ${request}`,
+    ],
+  };
+}
+
+function logicCount(graph: WorkflowGraph) {
+  return graph.nodes.filter(
+    (node) =>
+      node.data.type === "condition" ||
+      node.data.weekdayOnly ||
+      node.data.sendAfterHour != null ||
+      node.data.condition === "is_weekday" ||
+      node.data.condition === "in_send_window",
+  ).length;
+}
+
+async function withSequence(proposal: HermesProposal, request: string): Promise<HermesProposal> {
+  const sequence = await ai.generateSequenceSpec({
+    request,
+    goal: proposal.goal,
+    channels: proposal.channels,
+    current: proposal.sequence ?? (proposal.workflow ? graphToSpec(proposal.workflow) : undefined),
+  });
+  return {
+    ...proposal,
+    sequence,
+    workflow: specToGraph({ ...sequence, name: proposal.name }),
+    messages: proposal.messages?.length ? proposal.messages : messagesFromSequence(sequence),
+  };
+}
+
+function messagesFromSequence(sequence: SequenceSpec) {
+  return sequence.steps.map((step, index) => ({
+    nodeId: step.id || `seq-step-${index}`,
+    channel: step.channel,
+    subject: step.config.subject,
+    body: step.config.body || step.config.message || step.config.taskNotes || "",
+  }));
 }
 
 async function safeWorkflow(input: {
@@ -491,6 +644,10 @@ function mutateGraph(
           before: stringArg(args.before),
           waitHours: typeof args.waitHours === "number" ? args.waitHours : undefined,
           label: stringArg(args.label),
+          condition:
+            args.nodeType === "condition" || /weekend|weekday/i.test(String(args.label ?? ""))
+              ? "is_weekday"
+              : undefined,
         }
       : name === "remove_workflow_node"
         ? {
@@ -533,7 +690,7 @@ function summarizeProposal(proposal: HermesProposal) {
     name: proposal.name,
     goal: proposal.goal,
     channels: proposal.channels,
-    steps: proposal.workflow?.nodes.length ?? 0,
+    steps: proposal.sequence?.steps.length ?? proposal.workflow?.nodes.length ?? 0,
     messages: proposal.messages?.length ?? 0,
     changes: proposal.changes ?? [],
     waits: (proposal.workflow?.nodes ?? [])

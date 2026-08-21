@@ -1,4 +1,5 @@
 import type { ActionKind, ChannelId, ConditionKind, WorkflowGraph, WorkflowNodeData } from "../types";
+import { applyGraphOps } from "./ops";
 import { multiTouchMessages } from "./multitouch";
 import type { HermesProposal } from "../hermes/types";
 
@@ -96,11 +97,11 @@ export function isWorkflowEdit(message: string) {
     /\b(change|update|edit|adjust|revise|rename|add|remove|delete|insert|make it|set the wait|only send|weekday|constraint|instead|retarget|swap|replace|start with|can we|could we|i want|i wanna)\b/.test(
       value,
     );
-  const target = /\b(wait|hour|hours|sms|email|linkedin|whatsapp|workflow|campaign|sequence|step|touch|channel|node)\b/.test(
+  const target = /\b(wait|hour|hours|sms|email|linkedin|whatsapp|workflow|campaign|sequence|step|touch|channel|node|weekend|weekday|window|a\.?m|p\.?m)\b/.test(
     value,
   );
   if (creating && !editing) return false;
-  return (editing && target) || /\b(wait time|weekday only|hours instead|first touch)\b/.test(value);
+  return (editing && target) || /\b(wait time|weekday only|hours instead|first touch|time window)\b/.test(value);
 }
 
 export function isDestructiveReplacement(current?: WorkflowGraph | null, incoming?: WorkflowGraph | null) {
@@ -110,8 +111,49 @@ export function isDestructiveReplacement(current?: WorkflowGraph | null, incomin
   return incoming.nodes.length < current.nodes.length - 1 && shared >= 3;
 }
 
+function mergeMissingChecks(current: WorkflowGraph, incoming: WorkflowGraph): WorkflowGraph {
+  let graph = current;
+  for (const node of incoming.nodes) {
+    if (node.data.condition !== "is_weekday" && node.data.condition !== "in_send_window") continue;
+    if (
+      graph.nodes.some(
+        (item) =>
+          item.data.condition === node.data.condition &&
+          item.data.sendAfterHour === node.data.sendAfterHour &&
+          item.data.sendBeforeHour === node.data.sendBeforeHour,
+      )
+    ) {
+      continue;
+    }
+    const result = applyGraphOps(graph, [
+      {
+        kind: "add",
+        nodeType: "condition",
+        condition: node.data.condition,
+        label: node.data.label,
+        sendAfterHour: node.data.sendAfterHour,
+        sendBeforeHour: node.data.sendBeforeHour,
+        after: "email",
+      },
+    ]);
+    if (result.applied) graph = result.workflow;
+  }
+  return graph;
+}
+
 export function overlayWorkflow(current: WorkflowGraph, incoming: WorkflowGraph): WorkflowGraph {
-  if (isDestructiveReplacement(current, incoming)) return current;
+  const incomingChecks = incoming.nodes.filter(
+    (node) => node.data.condition === "is_weekday" || node.data.condition === "in_send_window",
+  );
+  const currentChecks = current.nodes.filter(
+    (node) => node.data.condition === "is_weekday" || node.data.condition === "in_send_window",
+  );
+  if (incomingChecks.length > currentChecks.length) {
+    return incoming;
+  }
+  if (isDestructiveReplacement(current, incoming)) {
+    return mergeMissingChecks(current, incoming);
+  }
   const previous = new Map(current.nodes.map((node) => [node.id, node]));
   return {
     name: incoming.name || current.name,
@@ -152,7 +194,7 @@ export function reviseWorkflow(graph: WorkflowGraph, request: string): WorkflowR
     if (nodes.length) changes.push(`Wait time set to ${formatHours(hours)}`);
   }
 
-  if (/\b(weekday|weekdays|monday|friday|business day|working day)\b/i.test(request)) {
+  if (/\b(weekday|weekdays|weekend|monday|friday|business day|working day)\b/i.test(request)) {
     const emails = workflow.nodes.filter((node) => node.data.action === "send_email" || node.data.channel === "email");
     for (const node of emails) {
       node.data.weekdayOnly = true;

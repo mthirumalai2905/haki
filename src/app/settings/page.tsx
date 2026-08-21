@@ -9,6 +9,15 @@ import { api } from "@/lib/api";
 type Settings = {
   workspace: { name: string };
   aiConfigured: boolean;
+  email?: {
+    configured: boolean;
+    sendEnabled: boolean;
+    fromConfigured: boolean;
+    from: string | null;
+    ok: boolean;
+    message: string;
+    domains: Array<{ name: string; status?: string }>;
+  };
   counts: { leads: number; campaigns: number; imports: number };
 };
 
@@ -59,6 +68,30 @@ export default function SettingsPage() {
             Set DEEPSEEK_API_KEY, DEEPSEEK_BASE_URL, and DEEPSEEK_MODEL in the server .env.
             The key never ships to the browser. Without a key, Hermes still drafts campaigns with a local harness.
           </p>
+        </section>
+
+        <section className="rounded-lg border border-line bg-surface p-5">
+          <div className="flex items-center justify-between">
+            <div className="text-sm font-medium">Resend</div>
+            <Badge tone={settings?.email?.ok ? "good" : "warn"}>
+              {settings?.email?.ok ? "Key accepted" : "Not ready"}
+            </Badge>
+          </div>
+          <p className="mt-2 text-sm leading-6 text-muted">
+            {settings?.email?.message || "Set RESEND_API_KEY on the server. Campaigns will not send until RESEND_SEND_ENABLED is true."}
+          </p>
+          <div className="mt-3 flex flex-wrap gap-1.5">
+            <Badge tone={settings?.email?.sendEnabled ? "warn" : "info"}>
+              {settings?.email?.sendEnabled ? "Live send on" : "Sends off. Simulation only."}
+            </Badge>
+            {settings?.email?.from ? <Badge tone="neutral">{settings.email.from}</Badge> : null}
+            {settings?.email?.domains.map((domain) => (
+              <Badge key={domain.name} tone={domain.status === "verified" ? "good" : "neutral"}>
+                {domain.name}
+                {domain.status ? ` · ${domain.status}` : ""}
+              </Badge>
+            ))}
+          </div>
         </section>
 
         <section className="rounded-lg border border-line bg-surface p-5">

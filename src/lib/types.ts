@@ -110,7 +110,9 @@ export type ConditionKind =
   | "positive_reply"
   | "negative_reply"
   | "no_response"
-  | "any_engagement";
+  | "any_engagement"
+  | "is_weekday"
+  | "in_send_window";
 
 export type WorkflowNodeData = {
   label: string;
@@ -121,6 +123,8 @@ export type WorkflowNodeData = {
   condition?: ConditionKind;
   waitHours?: number;
   weekdayOnly?: boolean;
+  sendAfterHour?: number;
+  sendBeforeHour?: number;
   subject?: string;
   body?: string;
   available?: boolean;

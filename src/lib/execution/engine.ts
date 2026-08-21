@@ -37,13 +37,35 @@ function requiredContact(channel?: string | null, lead?: { email?: string | null
   return true;
 }
 
-export async function launchCampaign(campaignId: string) {
+export async function activateScheduledCampaigns() {
+  const due = await db.campaign.findMany({
+    where: { status: "scheduled", sendAt: { lte: new Date() } },
+    select: { id: true },
+  });
+  for (const item of due) {
+    await db.campaign.update({ where: { id: item.id }, data: { status: "running", startedAt: new Date() } });
+    await db.campaignLead.updateMany({
+      where: { campaignId: item.id, status: "queued" },
+      data: { nextExecutionAt: new Date() },
+    });
+  }
+  return due.length;
+}
+
+export async function launchCampaign(
+  campaignId: string,
+  options?: { sendMode?: "now" | "scheduled"; sendAt?: Date },
+) {
   const campaign = await db.campaign.findUnique({
     where: { id: campaignId },
     include: { workflowVersions: { where: { isActive: true }, take: 1 } },
   });
   if (!campaign) throw new Error("Campaign not found");
   if (campaign.status === "running") return campaign;
+
+  const sendMode = options?.sendMode || campaign.sendMode || "now";
+  const sendAt = options?.sendAt || campaign.sendAt || new Date();
+  const scheduled = sendMode === "scheduled" && sendAt.getTime() > Date.now() + 5000;
 
   const audience = parseJson<{ type?: string; leadIds?: string[]; filters?: Record<string, unknown> }>(
     campaign.audience,
@@ -60,7 +82,12 @@ export async function launchCampaign(campaignId: string) {
   await db.$transaction(async (tx) => {
     await tx.campaign.update({
       where: { id: campaignId },
-      data: { status: "running", startedAt: new Date() },
+      data: {
+        status: scheduled ? "scheduled" : "running",
+        sendMode,
+        sendAt,
+        startedAt: scheduled ? null : new Date(),
+      },
     });
 
     for (const lead of leads) {
@@ -71,12 +98,12 @@ export async function launchCampaign(campaignId: string) {
           leadId: lead.id,
           status: "queued",
           currentNodeId: firstNodeId,
-          nextExecutionAt: new Date(),
+          nextExecutionAt: scheduled ? sendAt : new Date(),
         },
         update: {
           status: "queued",
           currentNodeId: firstNodeId,
-          nextExecutionAt: new Date(),
+          nextExecutionAt: scheduled ? sendAt : new Date(),
           completedAt: null,
         },
       });
@@ -413,7 +440,15 @@ async function runNode(
 
     const template = item.campaign.messages.find((message) => message.nodeId === node.id);
     const subject = personalize(template?.subject ?? data.subject, item.lead, research);
-    const body = personalize(template?.body ?? data.body, item.lead, research);
+    let body = personalize(template?.body ?? data.body, item.lead, research);
+    if (data.channel === "email") {
+      const video = await db.videoJob.findFirst({
+        where: { stepId: node.id, leadId: item.lead.id, attached: true, status: "ready" },
+      });
+      if (video?.videoUrl) {
+        body = `${body}\n\n[Simulated presenter video for this lead: ${video.videoUrl}]`;
+      }
+    }
     const result = channel
       ? await channel.send({ to: item.lead.email, subject, body })
       : { ok: true, simulated: true, provider: "simulation", message: "Action simulated" };
@@ -437,11 +472,11 @@ async function runNode(
       channel: data.channel,
       action: actionName,
       status: result.ok ? "sent" : "failed",
-      simulated: true,
-      metadata: { subject, preview: body.slice(0, 180), provider: result.provider },
+      simulated: result.simulated,
+      metadata: { subject, preview: body.slice(0, 180), provider: result.provider, note: result.message },
     });
 
-    if (!quiet && data.channel === "email" && Math.random() < OPEN_RATE) {
+    if (!quiet && result.simulated && data.channel === "email" && Math.random() < OPEN_RATE) {
       await recordActivity({
         workspaceId: item.campaign.workspaceId,
         leadId: item.lead.id,
@@ -453,7 +488,7 @@ async function runNode(
       });
     }
 
-    if (!quiet && Math.random() < REPLY_RATE) {
+    if (!quiet && result.simulated && Math.random() < REPLY_RATE) {
       const category = Math.random() < 0.55 ? "positive" : "neutral";
       await recordActivity({
         workspaceId: item.campaign.workspaceId,
@@ -493,6 +528,36 @@ async function runNode(
   }
 
   if (data.type === "condition") {
+    if (data.condition === "in_send_window") {
+      const hour = new Date().getHours();
+      const after = data.sendAfterHour ?? 9;
+      const before = data.sendBeforeHour ?? 10;
+      const open = after <= before ? hour >= after && hour < before : hour >= after || hour < before;
+      await recordActivity({
+        workspaceId: item.campaign.workspaceId,
+        campaignId: item.campaignId,
+        leadId: item.lead.id,
+        nodeId: node.id,
+        action: open ? "send_window_open" : "send_window_hold",
+        simulated: true,
+        metadata: { hour, after, before },
+      });
+      return open ? "yes" : "no";
+    }
+    if (data.condition === "is_weekday") {
+      const day = new Date().getDay();
+      const weekday = day !== 0 && day !== 6;
+      await recordActivity({
+        workspaceId: item.campaign.workspaceId,
+        campaignId: item.campaignId,
+        leadId: item.lead.id,
+        nodeId: node.id,
+        action: weekday ? "weekday_open" : "weekend_hold",
+        simulated: true,
+        metadata: { day },
+      });
+      return weekday ? "yes" : "no";
+    }
     const replied = await db.activity.findFirst({
       where: {
         campaignId: item.campaignId,

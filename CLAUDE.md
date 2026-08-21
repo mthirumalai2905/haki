@@ -35,7 +35,7 @@ Email is one channel, not the product.
 1. **Do not scrape** Zillow, Redfin, LinkedIn, Google, Maps, Crunchbase, Apollo, ZoomInfo, or similar listing/people databases.
 2. **Do not invent** emails or phones. Missing fields stay empty.
 3. **Do not launch** a campaign from raw AI output. Flow is: request → AI → structured result → validation → operator review → execution.
-4. **Do not fake** a successful real send. Until a provider is connected, actions are **simulated** and labeled as such.
+4. **Do not fake** a successful real send. Resend can be configured for email, but campaigns stay **simulated** until `RESEND_SEND_ENABLED=true`. Other channels stay simulation adapters.
 5. **Never expose** DeepSeek or other secrets to the client. Keys live in server env only. Never commit secrets.
 6. **Do not overbuild.** Prefer infrastructure that later providers can plug into.
 7. **Keep the lead model** independent of the original file or source system.
@@ -97,6 +97,9 @@ Environment (server):
 - `DEEPSEEK_API_KEY` (required for live model; otherwise fallbacks)
 - `DEEPSEEK_BASE_URL` (default `https://api.deepseek.com`)
 - `DEEPSEEK_MODEL` (default `deepseek-chat`)
+- `RESEND_API_KEY` (server only. Verified via domains API. No send unless enabled.)
+- `RESEND_FROM` (verified sender, e.g. `Haki <noreply@yourdomain.com>`)
+- `RESEND_SEND_ENABLED` (`true` to allow campaign email. Default off. Campaigns stay simulated.)
 
 UI tokens live in `src/app/globals.css` (`--paper`, `--ink`, `--accent` #007aff, `--sim`, `--sidebar`, etc.). App chrome is a mac-like window over a landscape background (`AppFrame`).
 
@@ -111,21 +114,25 @@ src/app/page.tsx              Landing
 src/app/haki/                 Haki AI (chat-first). /haki and /haki/[sessionId]
 src/app/universal/            Haki Universal Beta
 src/app/overview/             Workspace overview
-src/app/hermes/               Hermes studio (older / parallel chat + graph)
+src/app/hermes/               Redirects to /sequences
 src/app/leads/                Lead table + /leads/import
-src/app/campaigns/            List, new, [id] canvas
-src/app/sequences/            Reusable workflows
+src/app/campaigns/            List, new, [id] Sequence desk + canvas
+src/app/sequences/            Templates + preview + chat/canvas builder
 src/app/analytics/            Metrics
-src/app/settings/             Workspace + DeepSeek status + sample data + flush all sessions
+src/app/settings/             Workspace + DeepSeek + Resend check + sample data + flush all sessions
 src/app/api/                  Route handlers (JSON { success, data } or error)
 src/components/landing/       Marketing page
 src/components/haki/          Haki AI home, preview, markdown
 src/components/universal/     Universal plan + live collection table + record panel
 src/components/layout/        AppFrame, Sidebar, TopBar, CommandPalette
-src/components/workflow/      XYFlow canvas, nodes, Ask Haki
+src/components/workflow/      XYFlow canvas, nodes, palette, inspector
+src/components/sequence/      SequenceWorkspace (templates) + SequenceDesk (campaign)
 src/components/leads/         Lead drawer
 src/lib/ai/                   Single AI facade + DeepSeek + fallbacks
-src/lib/hermes/               Chat orchestrator, tools, scope gate
+src/lib/hermes/               Chat orchestrator, tools, scope gate, prose polish
+src/lib/sequence/             Spec, compile, persist, patch, starter templates
+src/lib/email/                Resend check + send (send stays off unless enabled)
+src/lib/video/                Simulated per-lead video jobs
 src/lib/import/               Parse, map, validate, normalize
 src/lib/workflow/             Defaults, multitouch, ops, revise
 src/lib/execution/            Engine, scheduler, channels, personalize
@@ -150,9 +157,11 @@ Client fetch helper: `src/lib/api.ts` (`api<T>(url)` unwraps `{ success, data }`
 
 **Icp + Qualification:** ICP definition; per-lead score 0–100, status (`qualified` | `maybe` | `unqualified`), reason.
 
-**Campaign:** name, goal, audience JSON, status (`draft` / `running` / paused / etc.), channels JSON.
+**Campaign:** name, goal, audience JSON, status (`draft` / `running` / paused / `scheduled` / etc.), channels JSON, `sendMode` (`now` | `scheduled`), `sendAt`.
 
-**Workflow + WorkflowVersion:** graph as JSON `nodes` + `edges`. Campaigns attach an active version.
+**Workflow + WorkflowVersion:** graph as JSON `nodes` + `edges`. Campaigns attach an active version. **WorkflowStep** rows are the ordered chat-authored sequence on that version.
+
+**VideoJob:** optional simulated per-lead video on an email step.
 
 **CampaignLead:** enrollment: status, currentNodeId, nextExecutionAt. Unique (campaignId, leadId).
 
@@ -177,12 +186,12 @@ JSON columns are strings parsed with `parseJson` in `src/lib/utils.ts`.
 Sidebar (`src/components/layout/Sidebar.tsx`):
 
 - Logo (traffic lights + **Haki** + “An MK Labs Product”) → `/`
-- Nav items: Universal (Beta), Overview, Hermes, Leads, Campaigns, Sequences, Analytics
+- Nav items: Universal (Beta), Overview, Leads, Campaigns, Sequences, Analytics
 - **Haki AI** sits at the **bottom** as a drawer. Click the row to open/close the session list. **+** creates a thread and opens `/haki/{id}`
 - Nested session list: open, hover to **rename** or **delete**. Deletes use in-app toasts (`Toaster` in `AppFrame`), not `window.confirm`
 - Footer: Simulation mode, Settings
 
-Haki AI is the primary product surface. Hermes remains a dedicated studio page.
+Haki AI is the primary product surface. Sequence builder lives on `/sequences`. `/hermes` redirects there.
 
 ---
 
@@ -193,16 +202,17 @@ Haki AI is the primary product surface. Hermes remains a dedicated studio page.
 Shipped sections:
 
 - Hero over landscape image, pill nav (How it works, Product, Stories, FAQ, Open Haki)
+- Under **Open Haki AI**: “Peace of mind before anything sends” (review first, simulation until a provider)
 - Fake app preview of Haki AI
-- File widgets (CSV / XLSX / JSON): bring a list from tools you already sit in. **Not** “used by these companies.”
-- How it works: vertical spine + copy + **full uncropped** walkthrough video `public/haki-walkthrough.webm` (object-contain, wide)
-- Problem: overlapping “messy tab” cards (email / LinkedIn / WhatsApp)
-- Product on a paper stage: ingest, qualify, workflow, review
+- File strip (CSV / XLSX / JSON): bring a list you already sit in. **Not** “used by these companies.”
+- How it works: copy + **full uncropped** walkthrough video `public/haki-walkthrough.webm` (object-contain, wide)
+- Problem: accordion (email / LinkedIn / WhatsApp)
+- Product desk: paper stage, click Ingest / Qualify / Workflow / Review, overlapping cards
 - Who it is for; comparison table
-- Flow chips; dark channel strip
+- Dark channel strip
 - Testimonials masonry (original names/quotes about multi-touch; not Aceternity copy)
 - FAQ (scrape, send, files, channels, closing the browser)
-- About + footer wordmark **Haki** + “An MK Labs Product”
+- About closer + footer wordmark **Haki** + “An MK Labs Product”
 
 Avoid em dashes in marketing copy.
 
@@ -220,7 +230,7 @@ Avoid em dashes in marketing copy.
 - After first send on `/haki`, `router.replace(/haki/{threadId})`. Keep the right pane open across that navigation. Persist `showPreview` and `tab` in `haki:workspace-session`
 - Empty state: “Who do you want to reach?”, starters from `/api/hermes/starters`
 - Chat: user bubbles, assistant markdown, tool chips
-- Composer (large): textarea, Upload file, **mic (Web Speech API, Chrome/Edge)**, **context ring** (H mark, ~64k estimated tokens from messages + draft + input, chars/4 + overhead), send
+- Composer (large): textarea, Upload file, **mic (Web Speech API, Chrome/Edge)**, **context ring** (H mark, 64k estimate). Empty session is **0**. Counts typed input, chat text, and drafted message copy only (`chars/4`). No fake overhead. Not a billed DeepSeek meter.
 - Save draft / open campaign via `/api/campaigns`
 - `sessionStorage` key `haki:seed`: one-shot prompt. Universal **Open in Haki AI** writes it; Haki AI consumes and sends it on load
 
@@ -256,6 +266,7 @@ Philosophy: AI recommends; execution validates. Nothing irreversible from a raw 
 - `draft_campaign`
 - `draft_multitouch_campaign` (fried-shop demo path: email → wait 24h → follow-up → LinkedIn → X intel → YouTube intel → WhatsApp)
 - `draft_sequence`
+- `draft_sequence_spec` / `revise_sequence_spec` (ordered steps; compile to graph; keep weekday / send-window checks)
 - `revise_campaign`
 - `add_workflow_node` / `remove_workflow_node` / `edit_workflow_node`
 - `qualify_leads`
@@ -264,7 +275,9 @@ Drafts sync to a campaign via `src/lib/campaigns/sync.ts` when a workflow exists
 
 If DeepSeek is missing, `local.ts` / `fallback.ts` still produce structured drafts.
 
-Hermes page (`/hermes`): `HermesStudio` + `HermesChat` + canvas. Overlaps Haki AI; Haki AI is the newer chat-first shell.
+Chat replies render through `Markdown.tsx` + `polishChatReply` (`src/lib/hermes/prose.ts`). No raw `**`, pipe tables, or `::` dumps.
+
+`/hermes` redirects to `/sequences`. `HermesStudio` is the sequences builder (chat + canvas), not a sidebar destination.
 
 ---
 
@@ -307,7 +320,7 @@ Preview ~100 rows. Mapping is correctable. Confirm normalizes companies + leads,
 
 ## 14. Campaigns, workflows, messages
 
-**Campaign** = goal + audience + workflow + messages + channels + execution state.
+**Campaign** = goal + audience + workflow + ordered sequence steps + messages + channels + execution state. `sendMode` (`now` | `scheduled`) and `sendAt` are additive. Scheduled campaigns wait in status `scheduled` until the in-process scheduler sees `sendAt`.
 
 Goals (typed): book meetings, generate replies, start conversations, drive website visits, generate leads, custom. Natural language is allowed; AI maps to strategy.
 
@@ -325,9 +338,11 @@ Conditions (spec examples): opened, replied, clicked, SMS replied, call answered
 
 **Messages:** `{{first_name}}`, `{{company_name}}`, `{{industry}}`, `{{job_title}}`, custom fields. AI generate/rewrite via `/api/ai/message` and `ai.generateMessage` / `rewriteMessage`.
 
-**Campaign pages:** list, `/campaigns/new`, `/campaigns/[id]` (canvas, Ask Haki, launch/pause).
+**Campaign pages:** list, `/campaigns/new`, `/campaigns/[id]` (Sequence desk + chat, canvas fallback, Ask Haki, launch now/schedule, pause).
 
-**Sequences:** `/sequences` reusable graphs.
+**Ordered steps:** `WorkflowStep` on the active version. Chat (`draft_sequence_spec` / `revise_sequence_spec` / `POST /api/campaigns/[id]/steps`) is the authoring surface. `editedByUser` protects pasted email copy. Email steps may toggle simulated per-lead `VideoJob`s (`src/lib/video/`).
+
+**Sequences:** `/sequences` (`SequenceWorkspace`). One scrollable page: template cards stay on top, preview/builder sit below. Nav: Templates, Builder, Library. Starters in `src/lib/sequence/templates.ts` (first reply, weekday window, email then LinkedIn, three-touch, email then WhatsApp). Click a card to preview path cards + canvas. Edit on the canvas or **Edit in chat**. Wheel scroll does not zoom the canvas (`zoomOnScroll` off) so the operator can scroll back to templates. `/hermes` redirects here. Command palette opens Sequences, not Hermes.
 
 ---
 
@@ -339,12 +354,13 @@ Conditions (spec examples): opened, replied, clicked, SMS replied, call answered
 
 - `launchCampaign` enrolls audience, sets queued + nextExecutionAt
 - Walks graph: actions call `getChannel` (`channels.ts`)
+- Email channel: Resend when `RESEND_API_KEY` is set; still **simulated** unless `RESEND_SEND_ENABLED=true` and `RESEND_FROM` is set
 - Waits set nextExecutionAt
-- Conditions branch yes/no
-- Simulated engagement rates (approx): open 42%, reply 8%, meeting 2%
+- Conditions: replied / engagement plus `is_weekday` and `in_send_window` (`sendAfterHour` / `sendBeforeHour`)
+- Fake open / reply / meeting rates only when the channel result is `simulated`
 - Intel steps: `gatherTwitterIntel`, `gatherYoutubeIntel` (simulated public context)
 - Skip send if required contact field missing
-- Activities recorded with `simulated: true` when not a real provider
+- Activity `simulated` follows the channel result. Never label a live Resend send as simulation, and never invent a real send when sends are off.
 
 `/api/tick` can process due work. `/api/campaigns/[id]/launch` and `/pause`.
 
@@ -385,10 +401,10 @@ All should return the `{ success, data }` / `jsonError` shape.
 ## 18. Security and compliance posture (current)
 
 - No end-user auth, no RBAC, no org switching.
-- DeepSeek key server-side only. Settings page tells the operator to set env vars.
+- DeepSeek and Resend keys server-side only. Settings shows DeepSeek status and a Resend domains check. Never show the raw key.
 - Universal refuses criminal / medical / credential-theft briefs in the planner prompt.
-- Simulation banner in the sidebar.
-- Do not add client-side API keys.
+- Simulation banner in the sidebar until live send is explicitly enabled.
+- Do not add client-side API keys. Do not commit `.env`.
 
 ---
 
@@ -398,15 +414,19 @@ Treat this table as source of truth when suggesting work. “Spec” means CLAUD
 
 | Area | Status | Notes |
 | --- | --- | --- |
-| Landing + MK Labs | Shipped | Video, stories, FAQ, file widgets (not customer logos) |
-| Haki AI chat + sessions | Shipped | Drawer sessions, desk bar, voice, context ring, flush-all |
+| Landing + MK Labs | Shipped | Hero peace-of-mind line, product desk, video, stories, FAQ (not customer logos) |
+| Haki AI chat + sessions | Shipped | Drawer sessions, desk bar, voice, context ring (empty = 0), flush-all |
 | Ingest CSV/XLSX | Shipped | JSON accepted in parser |
 | Lead table + drawer | Shipped | |
 | ICP qualify | Shipped | AI + fallback |
-| Campaign draft from chat | Shipped | Review first |
-| Visual workflow | Shipped | XYFlow |
-| Simulation engine + scheduler | Shipped | In-process; fake engagement rates |
-| Real email/SMS/LinkedIn providers | Not shipped | Channels exist as simulation adapters |
+| Campaign draft from chat | Shipped | Sequence spec + graph compile. Review first |
+| Chat sequence editor | Shipped | Ordered steps, per-step paste, editedByUser, launch now/schedule |
+| Per-lead AI video | Shipped (sim) | Email toggle. Mock news + DeepSeek script + mock renderer |
+| Sequence templates | Shipped | `/sequences` cards + preview + builder on one scroll |
+| Visual workflow | Shipped | XYFlow cards, grouped palette, inspector |
+| Simulation engine + scheduler | Shipped | In-process; fake engagement only when simulated |
+| Resend email | Wired, sends off | Key check + domain on Settings. Live send needs `RESEND_SEND_ENABLED=true` |
+| Real SMS/LinkedIn providers | Not shipped | Simulation adapters |
 | Independent worker / queue | Not shipped | Dies with the Node process |
 | Auth / multi-user | Not shipped | One workspace |
 | Reply inbox / real classification loop | Partial | `ai.classifyReply` exists; not a full mailbox |
@@ -424,7 +444,7 @@ Treat this table as source of truth when suggesting work. “Spec” means CLAUD
 - Simulation always labeled.
 - Dummy/sample data labeled.
 - Universal always Beta.
-- Context ring estimates tokens; it is not a billed DeepSeek meter.
+- Context ring estimates tokens from real text only. Empty composer is 0. It is not a billed DeepSeek meter.
 - Voice uses the browser Speech Recognition API; unsupported browsers disable the mic.
 - Landing Haki mark and app sidebar both say MK Labs.
 
@@ -433,7 +453,7 @@ Treat this table as source of truth when suggesting work. “Spec” means CLAUD
 ## 21. How to run locally
 
 1. `npm install`
-2. `.env` with `DATABASE_URL` and optional DeepSeek vars
+2. `.env` with `DATABASE_URL`, optional DeepSeek vars, optional Resend vars (`RESEND_SEND_ENABLED=false` unless you intend live mail)
 3. `npx prisma db push` (or rely on first boot if already pushed)
 4. `npm run dev`
 5. Landing `/`, product `/haki`

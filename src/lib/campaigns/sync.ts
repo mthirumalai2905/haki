@@ -3,6 +3,8 @@ import { audit } from "../audit";
 import { recordActivity } from "../activity";
 import { parseJson } from "../utils";
 import type { HermesProposal } from "../hermes/types";
+import { graphToSpec } from "../sequence/compile";
+import { replaceSteps } from "../sequence/persist";
 import type { WorkflowGraph } from "../types";
 
 export async function syncProposalToCampaign(
@@ -69,6 +71,15 @@ export async function syncProposalToCampaign(
       metadata: { hermes: true, source: "chat" },
     });
 
+    const createdVersion = await db.workflowVersion.findFirst({
+      where: { campaignId: created.id, isActive: true },
+    });
+    if (createdVersion) {
+      await replaceSteps(createdVersion.id, proposal.sequence ?? graphToSpec(proposal.workflow)).catch((error) => {
+        console.error("Sequence persist failed", error);
+      });
+    }
+
     return { campaignId: created.id, created: true };
   }
 
@@ -83,7 +94,12 @@ export async function syncProposalToCampaign(
     },
   });
 
-  await writeWorkflow(existing.id, existing.status, existing.workflowVersions[0], proposal.workflow);
+  const versionId = await writeWorkflow(existing.id, existing.status, existing.workflowVersions[0], proposal.workflow);
+  if (versionId) {
+    await replaceSteps(versionId, proposal.sequence ?? graphToSpec(proposal.workflow)).catch((error) => {
+      console.error("Sequence persist failed", error);
+    });
+  }
 
   if (proposal.messages?.length) {
     for (const message of proposal.messages) {
@@ -155,7 +171,7 @@ async function writeWorkflow(
       where: { id: current.id },
       data: { nodes, edges },
     });
-    return;
+    return current.id;
   }
 
   if (current) {
@@ -165,7 +181,7 @@ async function writeWorkflow(
     });
   }
 
-  await db.workflowVersion.create({
+  const created = await db.workflowVersion.create({
     data: {
       campaignId,
       version: (current?.version ?? 0) + 1,
@@ -174,4 +190,5 @@ async function writeWorkflow(
       isActive: true,
     },
   });
+  return created.id;
 }

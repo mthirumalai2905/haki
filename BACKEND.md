@@ -322,6 +322,38 @@ This ensures existing campaign leads remain deterministic.
 
 ---
 
+# Ordered sequence steps (additive)
+
+Chat-authored campaigns persist `WorkflowStep` rows on the active `WorkflowVersion`.
+
+A step is channel-agnostic:
+
+- `channel`: email, linkedin, sms, call_task, whatsapp, x, phone
+- `stepType`: action | wait | condition
+- `config` JSON: email `{subject,body}`; linkedin `{message,connectionNote}`; sms/whatsapp `{message}`; call_task `{taskNotes}`
+- `delayHours` before the step
+- `condition` optional
+- `editedByUser` (chat must not overwrite config)
+- `videoEnabled` (email only)
+
+The graph `nodes`/`edges` remain. The sequence compiles into that graph so the existing execution walker still runs.
+
+`Campaign.sendMode` is `now` | `scheduled`. `Campaign.sendAt` is the durable first-fire time.
+
+Scheduled campaigns sit in status `scheduled`. `activateScheduledCampaigns()` in the in-process scheduler (every 4s, same as `processDue`) flips them to `running` when `sendAt` is due. This is not a browser timer. If the Next process is down, nothing fires. `/api/tick` can also process due work.
+
+---
+
+# Personalized video jobs (simulation)
+
+`VideoJob` is per step + lead. Pipeline behind `newsProvider`, `scriptGenerator`, `videoRenderer` in `src/lib/video/`. Defaults are mocks + DeepSeek for the script only.
+
+Toggle off detaches (`attached=false`) and does not delete the row.
+
+`POST /api/video/preview` runs the pipeline in isolation with a fake company.
+
+---
+
 # AI Layer
 
 Create a centralized AI abstraction.
@@ -335,6 +367,7 @@ rewriteMessage
 classifyReply
 summarizeLead
 recommendNextAction
+generateSequenceSpec
 
 The rest of the application should not need to know how DeepSeek works.
 
@@ -350,11 +383,17 @@ DEEPSEEK_API_KEY
 DEEPSEEK_BASE_URL
 DEEPSEEK_MODEL
 
-The API key must remain server side.
+RESEND_API_KEY
+RESEND_FROM
+RESEND_SEND_ENABLED
 
-Never expose it to frontend code.
+Keys stay server side.
 
-Never commit it.
+Never expose them to frontend code.
+
+Never commit `.env`.
+
+Resend is verified with GET `/domains` (no send). Campaign email stays simulated until `RESEND_SEND_ENABLED=true`.
 
 ---
 

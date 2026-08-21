@@ -5,7 +5,7 @@ import { audit } from "@/lib/audit";
 import { AppError } from "@/lib/errors";
 import { jsonError, jsonOk } from "../../../_utils";
 
-export async function POST(_: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const workspace = await getWorkspace();
     const { id } = await params;
@@ -14,7 +14,11 @@ export async function POST(_: Request, { params }: { params: Promise<{ id: strin
     });
     if (!campaign) throw new AppError("NOT_FOUND", "Campaign not found.", 404);
 
-    const launched = await launchCampaign(id);
+    const body = await request.json().catch(() => ({}));
+    const launched = await launchCampaign(id, {
+      sendMode: body.sendMode === "scheduled" ? "scheduled" : "now",
+      sendAt: body.sendAt ? new Date(body.sendAt) : undefined,
+    });
     await audit({
       workspaceId: workspace.id,
       action: "campaign_launched",

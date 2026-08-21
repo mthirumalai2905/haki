@@ -60,7 +60,7 @@ export function CommandPalette({
                   <Item onSelect={() => go("/haki")}>Haki AI</Item>
                   <Item onSelect={() => go("/universal")}>Haki Universal (Beta)</Item>
                   <Item onSelect={() => go("/overview")}>Overview</Item>
-                  <Item onSelect={() => go("/hermes")}>Open Hermes</Item>
+                  <Item onSelect={() => go("/sequences")}>Open sequences</Item>
                   <Item onSelect={() => go("/leads")}>Search leads</Item>
                   <Item onSelect={() => go("/leads/import")}>Import leads</Item>
                   <Item onSelect={() => go("/campaigns")}>Search campaigns</Item>

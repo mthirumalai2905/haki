@@ -22,7 +22,7 @@ const instrumentSerif = Instrument_Serif({
 
 export const metadata: Metadata = {
   title: "Haki",
-  description: "AI-powered multi-channel outbound infrastructure.",
+  description: "The outreach OS for lists you already have. Upload, review, then run multi-channel campaigns in simulation.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

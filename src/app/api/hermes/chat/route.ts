@@ -64,11 +64,15 @@ export async function POST(request: Request) {
       turn.proposal.kind !== "none" &&
       turn.proposal.kind !== "sequence"
     ) {
-      const synced = await syncProposalToCampaign(workspace.id, turn.proposal, campaignId || undefined);
-      if (synced) {
-        campaignId = synced.campaignId;
-        turn.proposal.campaignId = synced.campaignId;
-        if (proposal) proposal.campaignId = synced.campaignId;
+      try {
+        const synced = await syncProposalToCampaign(workspace.id, turn.proposal, campaignId || undefined);
+        if (synced) {
+          campaignId = synced.campaignId;
+          turn.proposal.campaignId = synced.campaignId;
+          if (proposal) proposal.campaignId = synced.campaignId;
+        }
+      } catch (error) {
+        console.error("Hermes campaign sync failed", error);
       }
     }
 

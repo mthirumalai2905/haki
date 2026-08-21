@@ -1,4 +1,6 @@
 import type { IcpDefinition, QualificationResult, WorkflowGraph } from "../types";
+import { applySequenceInstruction, preserveEdits } from "../sequence/patch";
+import { SEQUENCE_CHANNELS, type SequenceSpec } from "../sequence/types";
 import { completeJson, isDeepSeekConfigured } from "./deepseek";
 import {
   fallbackClassify,
@@ -6,6 +8,7 @@ import {
   fallbackNextAction,
   fallbackQualify,
   fallbackRewrite,
+  fallbackSequence,
   fallbackSummary,
   fallbackWorkflow,
 } from "./fallback";
@@ -67,6 +70,44 @@ export const ai = {
       return validateQualification(result);
     } catch {
       return fallbackQualify(lead, icp);
+    }
+  },
+
+  async generateSequenceSpec(input: {
+    request: string;
+    goal?: string;
+    channels?: string[];
+    current?: SequenceSpec;
+  }): Promise<SequenceSpec> {
+    if (input.current?.steps.length && /add|remove|delete|shorten|delay|wait|after step/i.test(input.request)) {
+      const patched = applySequenceInstruction(input.current, input.request);
+      if (patched) return preserveEdits(input.current, patched);
+    }
+
+    if (!isDeepSeekConfigured()) {
+      const next = fallbackSequence(input);
+      return input.current ? preserveEdits(input.current, next) : next;
+    }
+
+    try {
+      const result = await completeJson<SequenceSpec>({
+        system: `You author multi-channel outreach sequences for Haki. Return JSON {name,goal,steps}. Each step: {channel,stepType,delayHours,condition,config,editedByUser,videoEnabled}. channel is one of ${SEQUENCE_CHANNELS.join(", ")}. stepType is action|wait|condition. delayHours is hours BEFORE the step. config is channel-specific: email {subject,body}; linkedin {message,connectionNote}; sms|whatsapp {message}; call_task|phone {taskNotes}. Use {{first_name}} and {{company_name}}. Never launch. If current steps exist, patch them. Never overwrite a step with editedByUser true.`,
+        user: JSON.stringify({ request: input.request, goal: input.goal, channels: input.channels, current: input.current }),
+      });
+      if (!result?.steps?.length) throw new Error("Invalid sequence");
+      const next: SequenceSpec = {
+        name: result.name || "Sequence",
+        goal: result.goal || input.goal,
+        steps: result.steps.map((step) => ({
+          ...step,
+          delayHours: Number(step.delayHours) || 0,
+          config: step.config ?? {},
+        })),
+      };
+      return input.current ? preserveEdits(input.current, next) : next;
+    } catch {
+      const next = fallbackSequence(input);
+      return input.current ? preserveEdits(input.current, next) : next;
     }
   },
 

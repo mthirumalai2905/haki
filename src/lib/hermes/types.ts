@@ -1,3 +1,4 @@
+import type { SequenceSpec } from "../sequence/types";
 import type { Audience, CampaignGoal, WorkflowGraph } from "../types";
 
 export type HermesRole = "user" | "assistant" | "system";
@@ -18,6 +19,7 @@ export type HermesProposal = {
   audience?: Audience;
   channels?: string[];
   workflow?: WorkflowGraph;
+  sequence?: SequenceSpec;
   messages?: Array<{
     nodeId: string;
     channel: string;

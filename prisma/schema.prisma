@@ -107,6 +107,7 @@ model Lead {
   qualifications Qualification[]
   campaignLeads  CampaignLead[]
   activities     Activity[]
+  videoJobs      VideoJob[]
 
   @@index([workspaceId])
   @@index([email])
@@ -159,6 +160,8 @@ model Campaign {
   updatedAt   DateTime  @updatedAt
   startedAt   DateTime?
   completedAt DateTime?
+  sendMode    String    @default("now")
+  sendAt      DateTime?
 
   workflowVersions WorkflowVersion[]
   campaignLeads    CampaignLead[]
@@ -191,8 +194,48 @@ model WorkflowVersion {
   edges      String    @default("[]")
   isActive   Boolean   @default(true)
   createdAt  DateTime  @default(now())
+  steps      WorkflowStep[]
 
   @@index([campaignId])
+}
+
+model WorkflowStep {
+  id                String          @id @default(cuid())
+  workflowVersionId String
+  workflowVersion   WorkflowVersion @relation(fields: [workflowVersionId], references: [id], onDelete: Cascade)
+  order             Int
+  channel           String
+  stepType          String          @default("action")
+  config            String          @default("{}")
+  delayHours        Float           @default(0)
+  condition         String?
+  editedByUser      Boolean         @default(false)
+  videoEnabled      Boolean         @default(false)
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  videoJobs         VideoJob[]
+
+  @@index([workflowVersionId, order])
+}
+
+model VideoJob {
+  id          String       @id @default(cuid())
+  stepId      String
+  step        WorkflowStep @relation(fields: [stepId], references: [id], onDelete: Cascade)
+  leadId      String
+  lead        Lead         @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  status      String       @default("queued")
+  newsContext String       @default("")
+  script      String       @default("")
+  videoUrl    String?
+  error       String?
+  attached    Boolean      @default(true)
+  generatedAt DateTime?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@unique([stepId, leadId])
+  @@index([status])
 }
 
 model CampaignLead {
