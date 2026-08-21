@@ -2,9 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowUp, Download } from "lucide-react";
-import { Button } from "@/components/ui/Button";
+import { ArrowUp } from "lucide-react";
 import { api } from "@/lib/api";
+import { CollectionPreview } from "./CollectionPreview";
 import type { UniversalPlan, UniversalStreamEvent } from "@/lib/universal/types";
 
 const HINTS = [
@@ -317,81 +317,19 @@ export function UniversalHome() {
         <span className="absolute inset-y-0 -left-1 -right-1" />
       </button>
 
-      <aside className="flex min-h-0 min-w-0 flex-1 flex-col bg-[#f7f7f8]">
-        <div className="flex items-center justify-between gap-3 px-4 pt-4">
-          <div>
-            <div className="text-[14px] font-semibold tracking-[-0.02em]">Preview</div>
-            <p className="mt-0.5 text-[12px] text-muted">
-              {found} found{target ? ` · ${target} target` : ""} · {pct}% of the pass
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <span
-              className={`h-2 w-2 rounded-full ${
-                phase === "collecting" ? "animate-pulse bg-good" : phase === "done" ? "bg-good" : "bg-[#d2d2d7]"
-              }`}
-            />
-            <span className="text-[11px] uppercase tracking-[0.12em] text-faint">
-              {phase === "collecting" ? "Collecting" : phase === "planning" ? "Planning" : phase === "done" ? "Complete" : "Idle"}
-            </span>
-            {phase === "done" && rows.length ? (
-              <>
-                <Button size="sm" variant="secondary" onClick={download}>
-                  <Download className="mr-1.5 h-3.5 w-3.5" />
-                  CSV
-                </Button>
-                <Button size="sm" onClick={() => void sendToImport()} disabled={sending}>
-                  {sending ? "Sending…" : "Import"}
-                </Button>
-              </>
-            ) : null}
-          </div>
-        </div>
-
-        <div className="mx-4 mt-3 h-1 overflow-hidden rounded-full bg-white">
-          <div className="h-full bg-accent transition-[width] duration-200" style={{ width: `${pct}%` }} />
-        </div>
-
-        <div className="m-4 min-h-0 flex-1 overflow-hidden rounded-[12px] border border-line bg-white">
-          {rows.length && columns.length ? (
-            <div ref={tableRef} className="h-full overflow-auto">
-              <table className="w-full min-w-[720px] text-left text-[12px]">
-                <thead className="sticky top-0 bg-white text-[10px] uppercase tracking-[0.12em] text-faint">
-                  <tr className="border-b border-line">
-                    <th className="w-10 px-3 py-2.5 font-medium">#</th>
-                    {columns.map((column) => (
-                      <th key={column} className="px-3 py-2.5 font-medium">
-                        {column.replace(/_/g, " ")}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {rows.map((row, index) => (
-                    <tr key={`${index}-${row.company ?? row.email ?? ""}`} className="border-b border-line last:border-0">
-                      <td className="px-3 py-2.5 font-mono text-[11px] text-faint">
-                        {String(index + 1).padStart(2, "0")}
-                      </td>
-                      {columns.map((column) => (
-                        <td key={column} className="max-w-[220px] truncate px-3 py-2.5 text-ink">
-                          {row[column] || "—"}
-                        </td>
-                      ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <div className="flex h-full items-center justify-center px-8 text-center text-[13px] leading-6 text-muted">
-              {status ||
-                (phase === "planning"
-                  ? "Plan is locking. Rows will land in this table as they resolve."
-                  : "The collected file preview lives here, same as Haki AI.")}
-            </div>
-          )}
-        </div>
-      </aside>
+      <CollectionPreview
+        rows={rows}
+        columns={columns}
+        found={found}
+        target={target}
+        pct={pct}
+        phase={phase}
+        status={status}
+        sending={sending}
+        tableRef={tableRef}
+        onDownload={download}
+        onImport={() => void sendToImport()}
+      />
     </div>
   );
 }

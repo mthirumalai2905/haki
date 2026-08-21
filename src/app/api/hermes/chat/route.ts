@@ -89,7 +89,7 @@ export async function POST(request: Request) {
         kind,
         messages: JSON.stringify(nextMessages),
         proposal: JSON.stringify(proposal ?? {}),
-        title: proposal?.name || thread.title,
+        title: keepSessionTitle(thread.title, proposal?.name),
       },
     });
 
@@ -105,6 +105,12 @@ export async function POST(request: Request) {
   } catch (error) {
     return jsonError(error);
   }
+}
+
+function keepSessionTitle(current: string, proposed?: string) {
+  const automatic = !current || current === "New session" || current === "Hermes";
+  if (automatic && proposed?.trim()) return proposed.trim().slice(0, 80);
+  return current;
 }
 
 function isProposal(value: unknown): value is HermesProposal {

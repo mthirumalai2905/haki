@@ -1,717 +1,476 @@
 # Haki
 
-## Product Definition
+This file is the A-to-Z brief for Haki. Use it to understand the product, the current codebase, what is shipped versus still specified, and where to suggest improvements. Do not invent customers, scraped listing sites, or real sends that the product does not do.
 
-Haki is an AI powered multi channel outbound infrastructure platform.
+**Brand:** Haki is **an MK Labs Product**.
 
-Haki does not source or scrape leads in the current version.
-
-Lead sourcing happens externally.
-
-Haki starts when a user uploads an existing dataset containing businesses, contacts and communication touchpoints.
-
-The core product flow is:
-
-Upload data
-→ Preview
-→ Map fields
-→ Validate
-→ Import
-→ Qualify
-→ Create campaign
-→ Build workflow
-→ Generate messages
-→ Review
-→ Launch
-→ Monitor
-→ Analyze
+**Repo:** `D:\Haki` (or the workspace root). App name in `package.json`: `haki` `0.1.0`.
 
 ---
 
-## Core Product Mental Model
+## 1. One-sentence product
 
-Haki should not feel like an email marketing tool.
+Haki is an AI-powered **multi-channel outbound operating system**. The operator brings a list they already have, names a goal, reviews a drafted workflow, and Haki runs the path (today in **simulation**). It is not an email blaster and not a lead-scraping database.
 
-It should feel like an outreach operating system.
+Operator sentence the product should feel like:
 
-The core mental model is:
+> I give Haki my leads, tell Haki who I want to reach and what I want to achieve, and Haki builds and manages the outreach workflow.
 
-DATA
-↓
-LEADS
-↓
-AI
-↓
-GOAL
-↓
-WORKFLOW
-↓
-MULTI CHANNEL OUTREACH
-↓
-CONVERSATIONS
-↓
-OUTCOMES
+What it is not:
 
-Email is only one communication channel.
+> CSV in, one email blast out.
+
+Mental model:
+
+```
+DATA → LEADS → AI → GOAL → WORKFLOW → MULTI CHANNEL OUTREACH → CONVERSATIONS → OUTCOMES
+```
+
+Email is one channel, not the product.
 
 ---
 
-## Initial Data Sources
+## 2. Non-negotiable rules
 
-The user can upload:
-
-- CSV
-- XLSX
-- JSON
-
-The first priority is CSV and XLSX.
-
-Haki should not care where the data originally came from.
-
-For example:
-
-Hermes → CSV → Haki
-
-Later:
-
-CRM → Haki
-API → Haki
-Other sourcing system → Haki
-
-The internal lead model must remain independent of the original source format.
+1. **Do not scrape** Zillow, Redfin, LinkedIn, Google, Maps, Crunchbase, Apollo, ZoomInfo, or similar listing/people databases.
+2. **Do not invent** emails or phones. Missing fields stay empty.
+3. **Do not launch** a campaign from raw AI output. Flow is: request → AI → structured result → validation → operator review → execution.
+4. **Do not fake** a successful real send. Until a provider is connected, actions are **simulated** and labeled as such.
+5. **Never expose** DeepSeek or other secrets to the client. Keys live in server env only. Never commit secrets.
+6. **Do not overbuild.** Prefer infrastructure that later providers can plug into.
+7. **Keep the lead model** independent of the original file or source system.
+8. **Preserve custom fields.** Unknown columns are not discarded.
+9. **Companies and contacts** are separate. One company can have many contacts.
+10. Copy should sound like an operator wrote it. Avoid long em dashes and generic “AI platform” sludge.
+11. Landing and marketing must not claim Google, SpaceX, Harvard, or similar as customers. Logo strip is “bring a CSV from tools you already sit in,” not social proof.
 
 ---
 
-## Haki Universal (Beta)
+## 3. Intended operator flow (spec)
 
-Haki Universal accepts a sourcing brief. DeepSeek routes it to allowed open-data APIs, then streams hits into a live collection panel.
+```
+Upload → Preview → Map fields → Validate → Import
+→ Qualify → Create campaign → Build workflow → Generate messages
+→ Review → Launch → Monitor → Analyze
+```
 
-Allowed sources: Wikidata SPARQL, OpenStreetMap Overpass.
-
-It does not scrape Zillow, Redfin, LinkedIn, Google, Maps, Crunchbase, Apollo, or ZoomInfo.
-
-Do not invent emails or phones. Missing fields stay empty.
-
-The operator can download the file or send it into the existing import flow.
-
-Mark it Beta in the sidebar. Never claim a listing site was scraped.
+Haki starts after sourcing. Sourcing is external (CSV/XLSX/JSON, CRM export, Hermes file) except **Haki Universal (Beta)**, which only queries allowed open-data APIs.
 
 ---
 
-## Ingestion
+## 4. Who it is for
 
-The first screen of the product should revolve around ingestion.
+- Operators who already have a list (bought, exported, or collected elsewhere).
+- Agencies running client outreach who need preview and review before a touch.
+- Founders who want meetings and conversations, not a second CRM.
 
-User uploads a dataset.
-
-Haki should:
-
-1. Read the file
-2. Detect columns
-3. Infer likely field mappings
-4. Validate the data
-5. Generate a preview
-6. Show the first 100 rows
-7. Allow field mapping corrections
-8. Allow the user to confirm the import
-9. Normalize the data
-10. Store the leads
-
-The user should always understand:
-
-- What was uploaded
-- How many rows exist
-- How many columns exist
-- What fields were detected
-- What is valid
-- What is missing
-- What needs attention
+If the user still needs a database of strangers, they are earlier than core Haki. Universal (Beta) is a narrow open-data exception, not a ZoomInfo replacement.
 
 ---
 
-## Preview
+## 5. Stack (how it is built)
 
-The preview should show approximately 100 rows.
+| Layer | Choice |
+| --- | --- |
+| Framework | Next.js **16.3.1** (App Router). Read `node_modules/next/dist/docs/` before writing Next APIs. This Next is not the Next from older training data. |
+| UI | React **19.2.8**, TypeScript, Tailwind CSS **4** |
+| Motion | `motion` (Framer Motion successor) |
+| Workflow canvas | `@xyflow/react` |
+| Command palette | `cmdk` |
+| Icons | `lucide-react` |
+| CSV / XLSX | `papaparse`, `xlsx` |
+| Validation | `zod` |
+| ORM / DB | Prisma 6, **SQLite** via `DATABASE_URL` |
+| AI | DeepSeek, server-only (`src/lib/ai/deepseek.ts`, facade `src/lib/ai/index.ts`) |
+| Also in package.json | `@langchain/core`, `@langchain/langgraph` (present; Hermes/Universal currently use the DeepSeek + tool layer more directly) |
+| Fonts | Inter, Geist Mono, Instrument Serif (`src/app/layout.tsx`) |
+| Auth | **None.** Single implicit workspace (`getWorkspace()` takes the first Workspace or creates “Haki”). |
+| Multi-tenant | Schema is workspace-scoped. Runtime is one local workspace. |
 
-Example:
+Scripts: `npm run dev` (Next), `build` (prisma generate + next build), `start`, `lint`, `db:generate`, `db:push`. `postinstall` runs `prisma generate`.
 
-Company | Contact | Email | Phone | LinkedIn | Website | Industry
+Dev server is typically `http://localhost:3000`.
 
-The user should be able to:
+Environment (server):
 
-- Horizontally scroll
-- Search
-- Inspect columns
-- See validation states
-- Change mappings
-- Continue importing
+- `DATABASE_URL` (SQLite)
+- `DEEPSEEK_API_KEY` (required for live model; otherwise fallbacks)
+- `DEEPSEEK_BASE_URL` (default `https://api.deepseek.com`)
+- `DEEPSEEK_MODEL` (default `deepseek-chat`)
 
-Do not force the user to inspect thousands of rows.
-
----
-
-## Lead Model
-
-Every row eventually becomes a normalized lead.
-
-Common fields:
-
-- Company
-- Contact
-- First name
-- Last name
-- Job title
-- Email
-- Phone
-- LinkedIn
-- WhatsApp
-- Reddit
-- X
-- Instagram
-- YouTube
-- Website
-- Country
-- Industry
-- Company size
-- Source
-- Custom fields
-
-Not every field will exist.
-
-Missing fields are normal.
-
-Unknown fields should not be discarded.
-
-Custom fields should be preserved.
+UI tokens live in `src/app/globals.css` (`--paper`, `--ink`, `--accent` #007aff, `--sim`, `--sidebar`, etc.). App chrome is a mac-like window over a landscape background (`AppFrame`).
 
 ---
 
-## Company Model
+## 6. Repository map
 
-Companies and contacts should be treated separately.
+```
+prisma/schema.prisma          Data model
+public/                       Static assets (walkthrough video, sample CSV, icons)
+src/app/page.tsx              Landing
+src/app/haki/                 Haki AI (chat-first). /haki and /haki/[sessionId]
+src/app/universal/            Haki Universal Beta
+src/app/overview/             Workspace overview
+src/app/hermes/               Hermes studio (older / parallel chat + graph)
+src/app/leads/                Lead table + /leads/import
+src/app/campaigns/            List, new, [id] canvas
+src/app/sequences/            Reusable workflows
+src/app/analytics/            Metrics
+src/app/settings/             Workspace + DeepSeek status + sample data
+src/app/api/                  Route handlers (JSON { success, data } or error)
+src/components/landing/       Marketing page
+src/components/haki/          Haki AI home, preview, markdown
+src/components/universal/     Universal plan + live collection cards
+src/components/layout/        AppFrame, Sidebar, TopBar, CommandPalette
+src/components/workflow/      XYFlow canvas, nodes, Ask Haki
+src/components/leads/         Lead drawer
+src/lib/ai/                   Single AI facade + DeepSeek + fallbacks
+src/lib/hermes/               Chat orchestrator, tools, scope gate
+src/lib/import/               Parse, map, validate, normalize
+src/lib/workflow/             Defaults, multitouch, ops, revise
+src/lib/execution/            Engine, scheduler, channels, personalize
+src/lib/universal/            Plan + Wikidata + Overpass
+src/lib/campaigns/            Sync proposal ↔ campaign, dummy campaign
+src/instrumentation.ts        Starts in-process scheduler on Node runtime
+```
 
-One company can have multiple contacts.
-
-Example:
-
-Company
-→ Acme
-
-Contacts
-→ John
-→ Sarah
-→ Mike
-
-The system should support company level and contact level information.
-
----
-
-## AI
-
-DeepSeek is the AI provider.
-
-AI should be used for:
-
-- Column interpretation
-- Data understanding
-- Lead qualification
-- ICP matching
-- Campaign strategy
-- Workflow generation
-- Message generation
-- Message rewriting
-- Personalization
-- Reply classification
-- Conversation analysis
-- Next action recommendations
-
-All AI functionality must be abstracted behind a single AI layer.
-
-Do not scatter AI logic throughout the application.
+Client fetch helper: `src/lib/api.ts` (`api<T>(url)` unwraps `{ success, data }`).
 
 ---
 
-## AI Philosophy
+## 7. Data model (Prisma / SQLite)
 
-AI should recommend and reason.
+**Workspace** owns imports, companies, leads, campaigns, workflows, activities, audit logs, ICPs, Hermes threads.
 
-The execution system should validate and execute.
+**Import:** file metadata, headers, mappings, preview JSON, stats, status (`uploaded` → mapped → confirmed / failed).
 
-Do not allow raw AI output to directly trigger irreversible actions.
+**Company:** name (unique per workspace), domain, website, industry, size, geo, socials, metadata JSON.
 
-The flow should be:
+**Lead:** names, title, email, phone, socials (LinkedIn, WhatsApp, Reddit, X, Instagram, YouTube, TikTok, Google Workspace), website, country, industry, companySize, source, customFields JSON, status, emailValid, phoneValid, optedOut, optional companyId and importId.
 
-User request
-→ AI
-→ Structured result
-→ Validation
-→ User review where necessary
-→ Execution
+**Icp + Qualification:** ICP definition; per-lead score 0–100, status (`qualified` | `maybe` | `unqualified`), reason.
 
----
+**Campaign:** name, goal, audience JSON, status (`draft` / `running` / paused / etc.), channels JSON.
 
-## Lead Qualification
+**Workflow + WorkflowVersion:** graph as JSON `nodes` + `edges`. Campaigns attach an active version.
 
-The user should be able to define an ICP.
+**CampaignLead:** enrollment: status, currentNodeId, nextExecutionAt. Unique (campaignId, leadId).
 
-Example:
+**MessageTemplate:** per campaign + nodeId, channel, subject, body.
 
-Industry:
-SaaS
+**Activity:** timeline events; `simulated` boolean.
 
-Company size:
-50 to 500
+**Execution:** per campaignLead + nodeId (dedupe completed steps).
 
-Location:
-United States
+**AuditLog:** action / objectType / objectId.
 
-Job title:
-Founder / CEO
+**HermesThread:** Haki AI / Hermes **sessions**. title, kind (`campaign` | `sequence`), messages JSON, proposal JSON.
 
-Haki can then analyze leads.
-
-Example output:
-
-Score: 87
-Status: Qualified
-
-Reason:
-
-Strong ICP match because the company operates in SaaS, is within the target company size and the contact is a founder.
-
-The qualification result should be structured.
+JSON columns are strings parsed with `parseJson` in `src/lib/utils.ts`.
 
 ---
 
-## Campaigns
+## 8. App shell and navigation
 
-A campaign is an outreach objective applied to a group of leads.
+`AppFrame` hides the chrome on `/` (landing). Everywhere else: landscape background, rounded “mac window,” optional sidebar, command palette (⌘K).
 
-A campaign contains:
+Sidebar (`src/components/layout/Sidebar.tsx`):
 
-- Audience
-- Goal
-- Workflow
-- Messages
-- Timing
-- Channels
-- Conditions
-- Execution state
-- Analytics
+- Logo (traffic lights + **Haki** + “An MK Labs Product”) → `/`
+- **Haki AI** → `/haki` (new session). **+** creates a thread and opens `/haki/{id}`
+- Nested session list: open, hover to **rename** or **delete**
+- Universal (Beta badge), Overview, Hermes, Leads, Campaigns, Sequences, Analytics
+- Footer: Simulation mode, Settings
+
+Haki AI is the primary product surface. Hermes remains a dedicated studio page.
 
 ---
 
-## Campaign Goals
+## 9. Landing page (`/`)
 
-Initial goals:
+`src/components/landing/LandingPage.tsx` plus `TrustStrip.tsx`, `smooth-scroll.ts`.
 
-- Book meetings
-- Generate replies
-- Start conversations
-- Drive website visits
-- Generate leads
-- Custom goal
+Shipped sections:
 
-The user can also describe their goal naturally.
+- Hero over landscape image, pill nav (How it works, Product, Stories, FAQ, Open Haki)
+- Fake app preview of Haki AI
+- White **trust strip**: colorful local SVG marks (Google, Microsoft, Salesforce, HubSpot, Notion, Slack, Sheets, Excel, Gmail, LinkedIn, WhatsApp, Hermes). Copy: bring a CSV from tools you already use. **Not** “used by these companies.”
+- How it works: copy + **full uncropped** walkthrough video `public/haki-walkthrough.webm` (object-contain, wide)
+- Problem (email / LinkedIn / WhatsApp in different tabs)
+- Product feature rows: ingest, qualify, workflow, review
+- Who it is for; comparison table
+- Flow chips; channel grid
+- Testimonials masonry (original names/quotes about multi-touch; not Aceternity copy)
+- FAQ (scrape, send, files, channels, closing the browser)
+- About + footer wordmark **Haki** + “An MK Labs Product”
 
-Example:
-
-"Reach SaaS founders and book discovery calls."
-
-Haki can use AI to convert this into a campaign strategy.
-
----
-
-## Audience
-
-A campaign can target:
-
-- All leads
-- Selected leads
-- Saved segment
-- Filtered leads
-- Qualified leads
-- Custom audience
-
-Filters can include:
-
-- Industry
-- Country
-- Company size
-- Job title
-- Qualification score
-- Has email
-- Has phone
-- Has LinkedIn
-- Custom fields
+Avoid em dashes in marketing copy.
 
 ---
 
-## Workflow Engine
+## 10. Haki AI (primary product)
 
-The workflow engine is the core of Haki.
+**Routes:** `/haki` empty/new chat. `/haki/[sessionId]` loads that `HermesThread`.
 
-A workflow consists of:
+**UI:** `src/components/haki/HakiHome.tsx`
 
-Trigger
-→ Action
-→ Wait
-→ Condition
-→ Action
-→ Outcome
+- Split: chat | optional ingest/campaign preview (`IngestPreview`)
+- Empty state: “Who do you want to reach?”, starters from `/api/hermes/starters`
+- Chat: user bubbles, assistant markdown, tool chips
+- Composer (large): textarea, Upload file, **mic (Web Speech API, Chrome/Edge)**, **context ring** (H mark, ~64k estimated tokens from messages + draft + input, chars/4 + overhead), send
+- After first send on `/haki`, `router.replace(/haki/{threadId})`
+- Preview opens on “show leads / preview” language or when a campaign is drafted
+- Save draft / open campaign via `/api/campaigns`
 
-Example:
+**Sessions API:**
 
-Lead enters campaign
-↓
-AI qualification
-↓
-Send email
-↓
-Wait 24 hours
-↓
-Has replied?
-├── Yes → Stop
-└── No → LinkedIn message
-↓
-Wait
-↓
-SMS
-↓
-Stop
+| Method | Path | Role |
+| --- | --- | --- |
+| GET | `/api/hermes/sessions` | List campaign threads |
+| POST | `/api/hermes/sessions` | Create “New session” |
+| PATCH | `/api/hermes/sessions/[id]` | Rename (keeps title on later chat if not default) |
+| DELETE | `/api/hermes/sessions/[id]` | Delete; if active, sidebar sends user to `/haki` |
+| GET | `/api/hermes/session?threadId=` | Load messages + proposal |
+| POST | `/api/hermes/chat` | Turn: scope + tools + persist thread |
 
-The workflow must not be hardcoded around email.
+Local `sessionStorage` key `haki:workspace-session` stores last thread/proposal for the same session id.
+
+Chat titles: auto-title only if title is empty, `New session`, or `Hermes`. Manual rename is kept.
 
 ---
 
-## Workflow Actions
+## 11. Hermes AI layer (how chat is built)
 
-Initial actions:
+`src/lib/hermes/orchestrator.ts` + `scope.ts` + `tools.ts` + `local.ts`
 
-- Send email
-- Send SMS
-- Make phone call
-- Send LinkedIn message
-- Send WhatsApp message
-- Send X message
-- Send Reddit message
+Philosophy: AI recommends; execution validates. Nothing irreversible from a raw completion.
 
-Future channels may include:
+**Scope gate:** decides if the message is about Haki/workspace. Off-topic stays in product.
 
-- Instagram
-- YouTube
-- Other communication channels
+**Tools (function calling):**
 
-Channels that are not implemented should be clearly marked as unavailable or coming soon.
+- `get_workspace_context`
+- `draft_campaign`
+- `draft_multitouch_campaign` (fried-shop demo path: email → wait 24h → follow-up → LinkedIn → X intel → YouTube intel → WhatsApp)
+- `draft_sequence`
+- `revise_campaign`
+- `add_workflow_node` / `remove_workflow_node` / `edit_workflow_node`
+- `qualify_leads`
 
-Never fake successful communication.
+Drafts sync to a campaign via `src/lib/campaigns/sync.ts` when a workflow exists. **Never launch from chat.**
 
----
+If DeepSeek is missing, `local.ts` / `fallback.ts` still produce structured drafts.
 
-## Workflow Conditions
-
-Examples:
-
-- Email opened
-- Email replied
-- Link clicked
-- SMS replied
-- Call answered
-- LinkedIn connected
-- LinkedIn replied
-- Meeting booked
-- No response
-- Positive response
-- Negative response
+Hermes page (`/hermes`): `HermesStudio` + `HermesChat` + canvas. Overlaps Haki AI; Haki AI is the newer chat-first shell.
 
 ---
 
-## AI Decision Node
+## 12. Haki Universal (Beta)
 
-Haki should eventually support an AI decision node.
+**Route:** `/universal`. Sidebar marked Beta.
 
-Example:
+Operator writes a sourcing brief. DeepSeek (or local plan) produces a plan (title, audience, geography, columns, thoughts). Then **only**:
 
-"Based on this lead's profile and previous conversation, determine the next best outreach channel."
+- Wikidata SPARQL
+- OpenStreetMap Overpass
 
-Possible output:
+Stream events: plan, thought, status, hit, done, error (`src/lib/universal/types.ts`).
 
-Email
-LinkedIn
-SMS
-Phone
-Stop
+**UI:** plan pane + `CollectionPreview` (cards, stats, filter, CSV, Import into `/leads/import`). Not a plain dump table.
 
-The AI decision should always produce structured output.
+Rules: no invented contact fields; never claim a listing site was scraped.
 
----
-
-## Workflow Builder
-
-The workflow should be visually editable.
-
-Users should be able to:
-
-- Add nodes
-- Delete nodes
-- Move nodes
-- Connect nodes
-- Edit nodes
-- Add conditions
-- Add waits
-- Duplicate nodes
-- Rearrange workflow steps
-
-The workflow should visually communicate:
-
-What happens
-→ When it happens
-→ What condition is checked
-→ What happens next
+API: `POST /api/universal` (NDJSON stream).
 
 ---
 
-## AI Workflow Generation
+## 13. Ingestion and leads
 
-The user should be able to say:
+**Import UI:** `/leads/import` steps Upload → Map → Preview → Import.
 
-"Create a 7 touch campaign for SaaS founders. Start with email, then LinkedIn, then SMS. Stop if they reply."
+**APIs:** `POST /api/imports`, `GET/PATCH` map, `POST .../confirm`.
 
-Haki should generate a workflow.
+**Lib:** `parse.ts` (CSV/XLSX/JSON), `map.ts` (column inference), `validate.ts`, `normalize.ts`.
 
-The generated workflow must be shown to the user before saving or launching.
+Preview ~100 rows. Mapping is correctable. Confirm normalizes companies + leads, keeps custom fields.
 
-Never automatically launch an AI generated campaign.
+**Leads UI:** `/leads` table, filters, drawer (`LeadDrawer`), social icons, qualify, insight (`/api/leads/[id]/insight`).
 
----
+**Qualify:** ICP via `/api/icp`, `/api/leads/qualify`, `/api/ai/qualify`. Structured score + status + reason.
 
-## Messages
-
-Messages should support personalization.
-
-Variables:
-
-- First name
-- Last name
-- Company
-- Job title
-- Industry
-- Website
-- Custom fields
-
-Example:
-
-Hi {{first_name}},
-
-I noticed {{company_name}} is growing in {{industry}}.
-
-...
-
-AI actions:
-
-- Generate
-- Rewrite
-- Shorten
-- Make more personal
-- Make more direct
-- Change tone
-- Generate variations
+**Sample data:** settings or `/api/sample` / dummy campaign. Demo fried-shop contacts when no real file exists. Label dummy clearly.
 
 ---
 
-## Campaign Execution
+## 14. Campaigns, workflows, messages
 
-Campaign execution must happen independently of the browser.
+**Campaign** = goal + audience + workflow + messages + channels + execution state.
 
-A user should not need to keep the application open.
+Goals (typed): book meetings, generate replies, start conversations, drive website visits, generate leads, custom. Natural language is allowed; AI maps to strategy.
 
-Each enrolled lead should have:
+Audience types (spec + partial code): all, selected ids, qualified, filtered (industry, country, size, title, score, has email/phone/LinkedIn, custom).
 
-- Current workflow step
-- Current status
-- Next action
-- Next execution time
-- Campaign
-- Lead
+**Workflow graph** (XYFlow, node type `haki`):
 
-The system must be resumable.
+Node types: trigger, action, wait, condition, ai_decision (spec; palette is still thin), end.
 
-If something fails, the campaign should know where it stopped.
+Actions in palette (`src/lib/workflow/nodes.ts`): email, WhatsApp, Instagram (wired oddly to linkedin action in one palette row — check before changing), LinkedIn message, LinkedIn connect, research X, research YouTube, SMS, wait, condition, stop.
 
----
+Unavailable real providers: mark coming soon. Never report a fake real send.
 
-## Campaign Lead States
+Conditions (spec examples): opened, replied, clicked, SMS replied, call answered, LinkedIn connected/replied, meeting booked, no response, positive/negative.
 
-Possible states:
+**Messages:** `{{first_name}}`, `{{company_name}}`, `{{industry}}`, `{{job_title}}`, custom fields. AI generate/rewrite via `/api/ai/message` and `ai.generateMessage` / `rewriteMessage`.
 
-- Queued
-- Active
-- Waiting
-- Paused
-- Completed
-- Failed
-- Stopped
-- Interested
-- Not interested
+**Campaign pages:** list, `/campaigns/new`, `/campaigns/[id]` (canvas, Ask Haki, launch/pause).
+
+**Sequences:** `/sequences` reusable graphs.
 
 ---
 
-## Activity System
+## 15. Execution and simulation
 
-Every important event should be recorded.
+`instrumentation.ts` starts `startScheduler()` on Node: `processDue` every **4 seconds**.
 
-Examples:
+`src/lib/execution/engine.ts`:
 
-- Lead imported
-- Lead qualified
-- Campaign started
-- Email sent
-- Email opened
-- Email replied
-- SMS sent
-- SMS replied
-- Call started
-- Call answered
-- LinkedIn message sent
-- Positive reply detected
-- Meeting booked
-- Campaign stopped
+- `launchCampaign` enrolls audience, sets queued + nextExecutionAt
+- Walks graph: actions call `getChannel` (`channels.ts`)
+- Waits set nextExecutionAt
+- Conditions branch yes/no
+- Simulated engagement rates (approx): open 42%, reply 8%, meeting 2%
+- Intel steps: `gatherTwitterIntel`, `gatherYoutubeIntel` (simulated public context)
+- Skip send if required contact field missing
+- Activities recorded with `simulated: true` when not a real provider
 
-This powers the timeline and analytics.
+`/api/tick` can process due work. `/api/campaigns/[id]/launch` and `/pause`.
+
+**Campaign lead states (spec):** queued, active, waiting, paused, completed, failed, stopped, interested, not interested.
+
+Browser close: scheduler is **in-process with the Next server**, not a separate worker. If `next dev` / the Node process is down, nothing ticks. Product spec wants execution independent of the **browser**; it is not yet a standalone worker/queue.
 
 ---
 
-## Lead Journey
+## 16. Activity, journey, analytics
 
-Every lead should have a chronological journey.
+`recordActivity` in `src/lib/activity.ts`. Timeline on overview, lead drawer, campaign.
 
-Example:
+Analytics (`/analytics`, `/api/analytics`): contacted, sent, opens, replies, positive replies, meetings, conversion. Breakdowns intended: campaign, channel, step, industry, size. Keep simple.
 
-Lead imported
-↓
-AI qualified
-↓
-Email sent
-↓
-Email opened
-↓
-LinkedIn message sent
-↓
-Reply received
-↓
-Reply classified as positive
-↓
-Campaign stopped
-
-The user should always understand:
-
-What happened?
-
-Why did it happen?
-
-What happens next?
+Overview: `/overview`, `/api/overview`.
 
 ---
 
-## Analytics
+## 17. Other APIs (inventory)
 
-Initial metrics:
+AI: `/api/ai/qualify`, `/api/ai/workflow`, `/api/ai/message`
 
-- Leads contacted
-- Messages sent
-- Open rate
-- Reply rate
-- Positive reply rate
-- Meetings
-- Conversion rate
+Campaigns: CRUD, launch, pause, dummy
 
-Breakdowns:
+Leads: list, get, qualify, insight
 
-- Campaign
-- Channel
-- Workflow step
-- Industry
-- Company size
+Workflows: `/api/workflows`
 
-Analytics should remain simple and actionable.
+Touchpoints: `/api/touchpoints`, `/api/touchpoints/[action]`
+
+Settings, activities, sample, tick
+
+All should return the `{ success, data }` / `jsonError` shape.
 
 ---
 
-## Simulation Mode
+## 18. Security and compliance posture (current)
 
-Until communication providers are connected, Haki should support simulation mode.
-
-Example:
-
-Email action simulated
-SMS action simulated
-LinkedIn action simulated
-
-Simulated actions must be clearly identified.
-
-Never represent simulated activity as real outreach.
+- No end-user auth, no RBAC, no org switching.
+- DeepSeek key server-side only. Settings page tells the operator to set env vars.
+- Universal refuses criminal / medical / credential-theft briefs in the planner prompt.
+- Simulation banner in the sidebar.
+- Do not add client-side API keys.
 
 ---
 
-## Security
+## 19. Feature status (honest)
 
-Never expose API keys to the frontend.
+Treat this table as source of truth when suggesting work. “Spec” means CLAUDE / product intent; “Shipped” means UI + server path exists in some form.
 
-DeepSeek credentials must only exist server side.
-
-The DeepSeek key should be supplied through environment configuration.
-
-Never hardcode secrets.
-
-Never commit secrets.
-
----
-
-## Development Principle
-
-Do not overbuild.
-
-The MVP should focus on:
-
-1. Ingestion
-2. Leads
-3. AI qualification
-4. Campaigns
-5. Workflow builder
-6. AI workflow generation
-7. Message generation
-8. Campaign monitoring
-9. Activity
-10. Analytics
-
-Do not build lead sourcing yet.
-
-Do not build scraping yet.
-
-Do not build every communication integration yet.
-
-Build the infrastructure so those integrations can be added later.
+| Area | Status | Notes |
+| --- | --- | --- |
+| Landing + MK Labs | Shipped | Video, stories, FAQ, trust strip (sources, not customers) |
+| Haki AI chat + sessions | Shipped | Create, list, rename, delete, voice, context ring |
+| Ingest CSV/XLSX | Shipped | JSON accepted in parser |
+| Lead table + drawer | Shipped | |
+| ICP qualify | Shipped | AI + fallback |
+| Campaign draft from chat | Shipped | Review first |
+| Visual workflow | Shipped | XYFlow |
+| Simulation engine + scheduler | Shipped | In-process; fake engagement rates |
+| Real email/SMS/LinkedIn providers | Not shipped | Channels exist as simulation adapters |
+| Independent worker / queue | Not shipped | Dies with the Node process |
+| Auth / multi-user | Not shipped | One workspace |
+| Reply inbox / real classification loop | Partial | `ai.classifyReply` exists; not a full mailbox |
+| AI decision node in canvas | Spec / thin | Prompted in generateWorkflow |
+| Universal open data | Shipped Beta | Wikidata + Overpass only |
+| Lead scraping | Forbidden | |
+| CRM / API ingest | Spec later | File upload first |
+| Instagram/YouTube as real send | Simulated intel or palette only | Never fake a send |
 
 ---
 
-## Final Product Principle
+## 20. Copy and UX conventions
 
-Haki should feel like:
+- Operator language. Short sentences. Periods and colons, not em dashes.
+- Simulation always labeled.
+- Dummy/sample data labeled.
+- Universal always Beta.
+- Context ring estimates tokens; it is not a billed DeepSeek meter.
+- Voice uses the browser Speech Recognition API; unsupported browsers disable the mic.
+- Landing Haki mark and app sidebar both say MK Labs.
 
-"I give Haki my leads, tell Haki who I want to reach and what I want to achieve, and Haki builds and manages the outreach workflow."
+---
 
-The product is not:
+## 21. How to run locally
 
-CSV → Email campaign
+1. `npm install`
+2. `.env` with `DATABASE_URL` and optional DeepSeek vars
+3. `npx prisma db push` (or rely on first boot if already pushed)
+4. `npm run dev`
+5. Landing `/`, product `/haki`
+
+`getWorkspace()` seeds dummy data via `ensureDummyData` so empty installs still have something to preview.
+
+---
+
+## 22. How to use this brief for improvement suggestions
+
+When asked to improve Haki, prefer:
+
+1. Gaps in the status table that match the mental model (review-first OS, not more blast features).
+2. Honesty: simulation, open-data-only Universal, no fake logos, no invented phones.
+3. Execution reliability (scheduler vs browser vs process).
+4. Auth and workspace isolation before calling it multi-tenant.
+5. Channel adapters that stay dark until a provider exists.
+6. Session UX, ingest UX, collection cards, landing clarity.
+7. Do not suggest scraping or “just add Apollo.”
+8. Do not suggest auto-launch from the model.
+
+Good suggestion shape: problem, why it matters for the OS metaphor, smallest change, what not to break.
+
+---
+
+## 23. Final product principle (repeat)
 
 The product is:
 
-DATA
-→ AI
-→ WORKFLOW
-→ MULTI CHANNEL OUTREACH
-→ CONVERSATION
-→ OUTCOME
+```
+DATA → AI → WORKFLOW → MULTI CHANNEL OUTREACH → CONVERSATION → OUTCOME
+```
+
+Not:
+
+```
+CSV → Email campaign
+```
+
+Haki is an MK Labs Product.
 
 <!-- BEGIN:nextjs-agent-rules -->
 

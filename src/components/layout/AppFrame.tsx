@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { Sidebar } from "./Sidebar";
 import { CommandPalette } from "./CommandPalette";
 import { ShellContext } from "./shell-context";
+import { ToastProvider } from "@/components/ui/Toaster";
 
 export { useSearchPalette, useShell } from "./shell-context";
 
@@ -29,12 +30,14 @@ export function AppFrame({ children }: { children: React.ReactNode }) {
         className="flex h-screen items-center justify-center bg-cover bg-center p-3"
         style={{ backgroundImage: "url(/haki-landscape.png)" }}
       >
-        <div className="mac-window flex h-full w-full overflow-hidden rounded-[12px] bg-white">
+        <ToastProvider>
+        <div className="mac-window relative flex h-full w-full overflow-hidden rounded-[12px] bg-white">
           {navOpen ? <Sidebar /> : null}
           <div className="relative z-0 flex min-w-0 flex-1 flex-col overflow-hidden bg-white">
             <PageGuard>{children}</PageGuard>
           </div>
         </div>
+        </ToastProvider>
       </div>
       <CommandPalette open={open} onOpenChange={setOpen} />
     </ShellContext.Provider>
